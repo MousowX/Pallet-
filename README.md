@@ -10,13 +10,19 @@ Todo lo de PALLET·LAB en una carpeta, listo para abrir en Claude Code.
 | `build.js` | Junta `src/` en el único `pallet-lab.html`. |
 | `CLAUDE.md` | Las reglas que Claude Code lee solo: un solo archivo HTML, sin precios, solo White Fir y Pino Mexicano, los diseños guardados siempre deben abrir, y cada cambio en una rama que tú apruebas. |
 | `docs/` | Historial de cambios (`CHANGELOG.md`), la nota de la decisión de usar solo PALLET·LAB y tu checklist en Excel. |
-| `history/` | Todas las versiones anteriores, numeradas del 01 al 12. La 12 es la versión aprobada contra la que se comparan los cambios. |
+| `history/` | Todas las versiones anteriores, numeradas del 01 al 13. La 13 es la versión aprobada contra la que se comparan los cambios. |
 | `tests/` | Pruebas automáticas, incluidos 18 diseños guardados con versiones anteriores. |
 
 ## Para empezar en Claude Code
 1. Descomprime el zip y abre la carpeta `pallet-lab` en Claude Code.
 2. Escribe: *"Lee README.md y CLAUDE.md. Luego corre las pruebas: cd tests && npm install && npm test && npm run compare."* Todas deben terminar con `failed checks: 0`.
 3. El proyecto está en GitHub (`MousowX/Pallet-`). Cada cambio va en su propia rama y tú apruebas cuándo entra a `main`.
+
+## Secciones que se abren y se cierran
+- Haz clic en el título de cualquier sección (TOP DECK, MATERIAL, PALLET DETAILS…) para cerrarla o abrirla.
+- Una sección de datos cerrada muestra en su título un resumen de una línea, por ejemplo `48″ × 40″` o `SF 1.5 · δ 1%`, para que no pierdas de vista lo que cambia los números.
+- Las notas de ayuda están detrás del botón **?** de cada título.
+- El navegador recuerda cómo dejaste las secciones. No cambia ningún cálculo ni las hojas impresas.
 
 ## Lista de diseños (base de datos)
 La sección DESIGNS guarda todos tus diseños en una base de datos dentro del navegador (IndexedDB). No necesita internet ni servidor, y funciona con doble clic.
@@ -78,7 +84,7 @@ Pide un plan antes de mover nada, por ejemplo:
 |---|---|---|
 | `npm test` (en `tests/`) | que `pallet-lab.html` esté al día con `src/`; 2,000 diseños al azar, también con campos vacíos o con errores, sin fallas ni números inválidos; 300 acomodos de triplay en hojas; los 18 diseños guardados viejos; la lista de diseños | Node.js |
 | `npm run compare` | que una versión nueva dé los mismos resultados que la aprobada | Node.js |
-| `tests/browser/flows.py` | la lista de diseños y su base de datos (guardar, abrir, borrar, importar, buscar, la lista vieja que pasa a la base, almacenamiento bloqueado o lleno, dos pestañas), archivos dañados, cambiar de tipo, imprimir | Python y Playwright |
+| `tests/browser/flows.py` | la lista de diseños y su base de datos (guardar, abrir, borrar, importar, buscar, la lista vieja que pasa a la base, almacenamiento bloqueado o lleno, dos pestañas), archivos dañados, cambiar de tipo, imprimir, secciones que se cierran | Python y Playwright |
 | `tests/browser/printfit.py` | que la hoja de una tarima quepa en una página | Python y Playwright |
 | `tests/browser/labels.py` | que no haya etiquetas encimadas o cortadas en los dibujos | Python y Playwright |
 | `tests/browser/inputs_fit.py` | que cada campo muestre su valor completo | Python y Playwright |
@@ -89,7 +95,7 @@ En Windows, el comando de Python suele ser `python` o `py` en lugar de `python3`
 
 ## Respaldo
 - Copia congelada en tu proyecto Cobaza Madera de Claude: `pallet-lab/pallet-lab-backup-2026-10-17.html`.
-- `history/12_2026-10-21_master.html` en esta carpeta (la versión aprobada actual) y todas las anteriores.
+- `history/13_2026-10-21_master.html` en esta carpeta (la versión aprobada actual) y todas las anteriores.
 
 ## Pendientes conocidos
 - La capacidad con montacargas (FORK SUPPORT) no toma en cuenta las muescas, así que sale alta cuando las horquillas entran por ellas. Es la primera mejora de la checklist.

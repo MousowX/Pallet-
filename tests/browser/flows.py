@@ -1,6 +1,7 @@
 # Browser checks (Chrome via Playwright): the design list and its database (save, update, load, delete, the
 # older in-browser list moved in, damaged or blocked or full storage, two tabs, design files saved and loaded
-# into the list, importing many files, search), design files (good, damaged, foreign), type switching, printing.
+# into the list, importing many files, search), design files (good, damaged, foreign), type switching, printing,
+# folding panels.
 # Usage: python3 flows.py [path/to/pallet-lab.html or https://the-site/]   (needs: pip install playwright && playwright install chromium)
 import pathlib
 import asyncio, json, os, random, sys, unicodedata
@@ -152,6 +153,7 @@ async def main():
         dis=await pg.evaluate("['libSel','libFind','btnLibSave','btnLibDel','btnImport'].every(i=>document.getElementById(i).disabled)")
         hint=await pg.evaluate("document.getElementById('libHint').textContent")
         check(dis and "blocking" in hint, f"C library off with message: disabled={dis} hint={hint!r}")
+        check(await pg.evaluate("document.getElementById('libHint').offsetParent!==null"), "C the blocked-storage notice shows even with the notes hidden")
         async with pg.expect_download() as dl: await pg.click("#btnFileSave")
         d=await dl.value; fn=os.path.join(D,"blocked_"+d.suggested_filename); await d.save_as(fn)
         check(json.load(open(fn))["fmt"]=="pallet-lab/1", "C file save works with storage blocked")
@@ -427,6 +429,41 @@ async def main():
         lst=await lib(pg)
         check([x["name"] for x in lst]==["Old two","Old three"] and lst[0]["state"]["f"]["L"]=="50", f"L5 later saves of an older version move in: {[x['name'] for x in lst]}")
         check(not errs, f"L errors {errs}")
+        await ctx.close()
+
+        # ---------- M. folding panels ----------
+        ctx,pg,errs=await newpage(b)
+        vis=lambda i: pg.evaluate(f"document.getElementById('{i}').offsetParent!==null")
+        sec=lambda k: f"document.querySelector('.sec[data-fold=\"{k}\"]')"
+        cards0=await pg.evaluate("document.getElementById('cards').textContent"); size0=await pg.evaluate("[cv.clientWidth,cv.clientHeight]")
+        n=await pg.evaluate("document.querySelectorAll('.sec.foldable').length")
+        check(n==14 and await pg.evaluate("document.querySelectorAll('.sec.foldable.collapsed').length")==0, f"M1 every panel can fold, all open at first: {n}")
+        check(not await pg.evaluate("[...document.querySelectorAll('.sec.foldable .hint')].some(h=>h.offsetParent!==null)"), "M2 the notes start hidden")
+        await pg.click(f"{'.sec[data-fold=\"bottom\"] .helpBtn'}")
+        check(await pg.evaluate(sec('bottom')+".querySelector('.hint').offsetParent!==null"), "M3 ? shows that section's notes")
+        await pg.click(".sec[data-fold=\"footprint\"] > h2")
+        check(not await vis("L") and not await vis("W"), "M4 a closed section hides its inputs")
+        s=await pg.evaluate(sec('footprint')+".querySelector('.foldSum').textContent")
+        check(s=="48″ × 40″" and await pg.evaluate(sec('footprint')+".querySelector('.foldSum').offsetParent!==null"), f"M5 a closed section shows a summary: {s!r}")
+        await pg.evaluate("(()=>{const e=document.getElementById('L'); e.value='50'; e.dispatchEvent(new Event('input'))})()")
+        s=await pg.evaluate(sec('footprint')+".querySelector('.foldSum').textContent"); check(s=="50″ × 40″", f"M6 the summary follows the design: {s!r}")
+        await pg.focus(".sec[data-fold=\"analysis\"] > h2"); await pg.keyboard.press("Enter")
+        s=await pg.evaluate(sec('analysis')+".querySelector('.foldSum').textContent")
+        check(not await vis("SF") and s=="SF 1.5 · δ 1%", f"M7 Enter on a title closes it: {s!r}")
+        await pg.click(".sec[data-fold=\"cut\"] > h2")
+        check(not await vis("cutList") and (await pg.evaluate("document.getElementById('cutTitle').textContent")).startswith("CUT LIST"), "M8 results panels fold too")
+        await pg.fill("#orderQty","25") if await vis("orderQty") else None
+        check((await pg.evaluate("document.getElementById('cutTitle').textContent"))=="CUT LIST — ORDER OF 25", "M9 a closed panel is still kept up to date")
+        check(await pg.evaluate("[cv.clientWidth,cv.clientHeight]")==size0, "M10 folding leaves the drawing area as it was")
+        await pg.click("#btnReset"); await pg.wait_for_timeout(50)
+        check(await pg.evaluate("document.getElementById('cards').textContent")==cards0, "M11 the results are the same with panels closed")
+        st=await pg.evaluate("collectState()"); check(not any(k.startswith("fold") for k in st["f"]), "M12 folding is not part of a design")
+        await pg.reload(); await pg.wait_for_timeout(300); await idle(pg)
+        closed=await pg.evaluate("[...document.querySelectorAll('.sec.collapsed')].map(s=>s.dataset.fold).sort()")
+        check(closed==["analysis","cut","footprint"] and await pg.evaluate(sec('bottom')+".querySelector('.hint').offsetParent!==null"), f"M13 the browser remembers: {closed}")
+        for k in ["footprint","analysis","cut"]: await pg.click(f".sec[data-fold=\"{k}\"] > h2")
+        check(await pg.evaluate("document.querySelectorAll('.sec.collapsed').length")==0 and await vis("L"), "M14 a click opens it again")
+        await health(pg,"M"); check(not errs, f"M errors {errs}")
         await ctx.close()
 
         await b.close()

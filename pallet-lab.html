@@ -62,6 +62,25 @@ header .sp{flex:1}
 .cloudWho{color:var(--accent);font-size:10.5px;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #secLib.shared #libSel{border-color:var(--accent)}
 
+/* ---------- folding panels (app/fold.js) ---------- */
+.foldable > h2{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;white-space:nowrap}
+.foldable > h2::before{content:"";flex:none;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:5px solid currentColor;transition:transform .15s}
+.foldable.collapsed > h2::before{transform:rotate(-90deg)}
+.foldable > h2:hover,.foldable > h2:focus-visible{color:var(--dim);outline:none}
+.foldable.collapsed{padding-bottom:10px}
+.foldable.collapsed > h2{margin-bottom:0}
+.foldable.collapsed > :not(h2){display:none !important}
+.foldSum{display:none;flex:1 1 auto;margin-left:auto;min-width:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:0;color:var(--dim)}
+.foldable.collapsed .foldSum{display:block}
+.helpBtn{margin-left:auto;flex:none;width:15px;height:15px;border-radius:50%;border:1px solid var(--line);background:none;
+  color:var(--faint);font-family:var(--mono);font-size:9px;line-height:13px;padding:0;cursor:pointer;letter-spacing:0}
+.helpBtn:hover,.foldable.helpOn .helpBtn{border-color:var(--accent);color:var(--accent)}
+.foldable.collapsed .helpBtn{display:none}
+.foldable .hint{display:none}
+.foldable.helpOn .hint{display:block}
+#libHint.alert{display:block !important;color:var(--bad)}
+
 /* ---------- viewport ---------- */
 /* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */
 #viewport{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
@@ -169,7 +188,7 @@ table.det td.bad{color:var(--bad)}
 <div id="main">
 <!-- ============ LEFT : DESIGN INPUTS ============ -->
 <div class="col">
-  <div class="sec" id="secLib"><h2>DESIGNS</h2>
+  <div class="sec" id="secLib" data-fold="designs"><h2>DESIGNS</h2>
     <div id="cloudBox" style="display:none">
       <div id="cloudSignedOut">
         <input type="email" id="cloudEmail" placeholder="email — shared list" autocomplete="username" spellcheck="false">
@@ -202,25 +221,25 @@ table.det td.bad{color:var(--bad)}
     <div class="hint" id="libHint">Every design saved or loaded, here or as a file, goes into this list — search it by name, client or part #. A design file (.json) keeps every input: send it with the drawing or archive it per part number.</div>
   </div>
 
-  <div class="sec"><h2>IDENTIFICATION</h2>
+  <div class="sec" data-fold="id"><h2>IDENTIFICATION</h2>
     <div class="row"><label>Client</label><input type="text" id="client" placeholder="—" maxlength="60"></div>
     <div class="row"><label>Part #</label><input type="text" id="partNo" placeholder="—" maxlength="40"></div>
     <div class="row"><label>Order quantity</label><input type="number" id="orderQty" value="1" step="1" min="1" max="100000"><span class="unit">pcs</span></div>
   </div>
 
-  <div class="sec"><h2>FOOTPRINT</h2>
+  <div class="sec" data-fold="footprint"><h2>FOOTPRINT</h2>
     <div class="row"><label>Length (stringer dir.)</label><input type="number" id="L" value="48" step="1" min="12" max="240"><span class="unit">in</span></div>
     <div class="row"><label>Width (deck dir.)</label><input type="number" id="W" value="40" step="1" min="12" max="240"><span class="unit">in</span></div>
   </div>
 
-  <div class="sec"><h2>TOP DECK</h2>
+  <div class="sec" data-fold="top"><h2>TOP DECK</h2>
     <div class="row"><label>Board count</label><input type="number" id="dCount" value="7" step="1" min="2" max="40"><span class="unit"></span></div>
     <div class="row"><label>Board width</label><input type="number" id="dWidth" value="3.5" step="0.25" min="2" max="12"><span class="unit">in</span></div>
     <div class="row"><label>End board width</label><input type="number" id="dLead" value="5.5" placeholder="same" data-blank="same" step="0.25" min="2" max="12"><span class="unit">in</span></div>
     <div class="row"><label>Board thickness</label><input type="number" id="dThk" value="0.75" step="0.0625" min="0.375" max="2"><span class="unit">in</span></div>
   </div>
 
-  <div class="sec"><h2>BOTTOM DECK</h2>
+  <div class="sec" data-fold="bottom"><h2>BOTTOM DECK</h2>
     <div class="row"><label>Board count</label><input type="number" id="bCount" value="5" step="1" min="0" max="40"><span class="unit"></span></div>
     <div class="row"><label>Board width</label><input type="number" id="bWidth" value="3.5" step="0.25" min="2" max="12"><span class="unit">in</span></div>
     <div class="row"><label>End board width</label><input type="number" id="bLead" value="5.5" placeholder="same" data-blank="same" step="0.25" min="2" max="12"><span class="unit">in</span></div>
@@ -232,7 +251,7 @@ table.det td.bad{color:var(--bad)}
     <div class="hint">End boards are the two at the pallet ends (leave blank for the same width as the rest). "Clear the notches" keeps the inner bottom boards between the notches so forks can enter from the sides.</div>
   </div>
 
-  <div class="sec" id="secStringer"><h2>STRINGERS</h2>
+  <div class="sec" id="secStringer" data-fold="stringers"><h2>STRINGERS</h2>
     <div class="row"><label>Count</label><input type="number" id="sCount" value="3" step="1" min="2" max="9"><span class="unit"></span></div>
     <div class="row"><label>Thickness (b)</label><input type="number" id="sThk" value="1.5" step="0.125" min="0.75" max="4"><span class="unit">in</span></div>
     <div class="row"><label>Height (h)</label><input type="number" id="sHgt" value="3.5" step="0.25" min="2" max="6"><span class="unit">in</span></div>
@@ -243,7 +262,7 @@ table.det td.bad{color:var(--bad)}
     <div class="hint notchRow">The two notches are centered on the stringer, this far apart; the distance to each end follows.</div>
   </div>
 
-  <div class="sec" id="secBox" style="display:none"><h2>BOX — CLEATED PLYWOOD PANELS</h2>
+  <div class="sec" id="secBox" data-fold="box" style="display:none"><h2>BOX — CLEATED PLYWOOD PANELS</h2>
     <div class="row"><label>Base type</label><select id="boxBase">
       <option value="stringer" selected>Stringer base</option>
       <option value="block">Block base — 4-way</option>
@@ -294,7 +313,7 @@ table.det td.bad{color:var(--bad)}
     <div class="hint">ASTM D6251-style cleated panel walls: a 1×4 cleat frame (rails and edge cleats, plus intermediate cleats no farther apart than the max cleat spacing), plywood sheathing. Edge cleats interior keep the crate flush to the pallet footprint; exterior lap the side-to-end corner joint (stronger corner, more interior room) but stand one cleat thickness proud of the base on each face. Skirted: panels drop over the base edge and are nailed horizontally into it (fasteners in shear — standard for export). Side and end laps are set apart: keep the end lap at the deck so the forks fit between the stringers, and stop the side lap above the notches for side entry. On-deck: bottom rail lag-screwed down into stringers (detachable, weaker). Plywood is ISPM-15 exempt, and so are cleats ripped from it; the lumber base and lumber cleats need the HT stamp. Plywood sheets are counted by laying every part on the sheet with the saw cut between parts; cleat strips run along the face grain (sheet length).</div>
   </div>
 
-  <div class="sec" id="secBlock" style="display:none"><h2>BLOCKS + STRINGER BOARDS</h2>
+  <div class="sec" id="secBlock" data-fold="blocks" style="display:none"><h2>BLOCKS + STRINGER BOARDS</h2>
     <div class="row"><label>Blocks along length</label><input type="number" id="kNL" value="3" step="1" min="2" max="8"><span class="unit"></span></div>
     <div class="row"><label>Blocks along width</label><input type="number" id="kNW" value="3" step="1" min="2" max="8"><span class="unit"></span></div>
     <div class="row"><label>Block size (square)</label><input type="number" id="kSize" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
@@ -308,7 +327,7 @@ table.det td.bad{color:var(--bad)}
     <div class="hint">One stringer board runs lengthwise on each row of blocks, under the top deck, so their count follows "blocks along width". One bottom deckboard sits under each block column, so the BOTTOM DECK count follows "blocks along length". Every block lands on a board.</div>
   </div>
 
-  <div class="sec"><h2>MATERIAL</h2>
+  <div class="sec" data-fold="material"><h2>MATERIAL</h2>
     <div class="row"><label>Species</label><select id="species"></select></div>
     <div class="row"><label>Bending Fb</label><input type="number" id="Fb" value="850" step="25" min="100" max="5000"><span class="unit">psi</span></div>
     <div class="row"><label>Stiffness E</label><input type="number" id="E" value="1100000" step="50000" min="100000" max="4000000"><span class="unit">psi</span></div>
@@ -316,7 +335,7 @@ table.det td.bad{color:var(--bad)}
     <div class="hint">Dry lumber only (MC ≤ 19%) — no wet-service reduction applied. Defaults ≈ No.2 design values; Fb/E stay editable per lot.</div>
   </div>
 
-  <div class="sec"><h2>ANALYSIS SETTINGS</h2>
+  <div class="sec" data-fold="analysis"><h2>ANALYSIS SETTINGS</h2>
     <div class="row"><label>Safety factor (strength)</label><input type="number" id="SF" value="1.5" step="0.1" min="1" max="4"><span class="unit"></span></div>
     <div class="row"><label>Deflection limit</label><input type="number" id="defPct" value="1.0" step="0.1" min="0.2" max="3"><span class="unit">%span</span></div>
     <div class="row"><label>Rack bearing / side</label><input type="number" id="bearing" value="2" step="0.5" min="0.5" max="6"><span class="unit">in</span></div>
@@ -339,19 +358,19 @@ table.det td.bad{color:var(--bad)}
 
 <!-- ============ RIGHT : RESULTS ============ -->
 <div class="col">
-  <div class="sec"><h2>RATED CAPACITY — ESTIMATES</h2>
+  <div class="sec" data-fold="capacity"><h2>RATED CAPACITY — ESTIMATES</h2>
     <div id="cards"></div>
   </div>
 
-  <div class="sec"><h2 id="detTitle">PALLET DETAILS</h2>
+  <div class="sec" data-fold="details"><h2 id="detTitle">PALLET DETAILS</h2>
     <table class="det" id="det"></table>
   </div>
 
-  <div class="sec"><h2>BILL OF MATERIALS</h2>
+  <div class="sec" data-fold="bom"><h2>BILL OF MATERIALS</h2>
     <table class="bom" id="bom"></table>
   </div>
 
-  <div class="sec"><h2 id="cutTitle">CUT LIST</h2>
+  <div class="sec" data-fold="cut"><h2 id="cutTitle">CUT LIST</h2>
     <div id="cutList"></div>
   </div>
 
@@ -1739,6 +1758,7 @@ function update(msg){
   setHTML("vpDims",
     `<b>${m.L}″ × ${m.W}″ × ${m.H.toFixed(2)}″</b> · ${m.totBF.toFixed(1)} BF · ${m.weight.toFixed(0)} lb tare${extra}<br>`+
     `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`);
+  foldSummaries(m);            // the one-line summaries of closed sections
   drawScreen(m);               // last: the footer text above sets how much height the drawing gets
   if(msg) toast(msg);
 }
@@ -2326,6 +2346,7 @@ function libOff(){
   libOK=false; libRows=[];
   ["libSel","libFind","btnLibSave","btnLibDel","btnImport"].forEach(id=>{ $(id).disabled=true; });
   $("libHint").textContent="This browser is blocking local storage, so the in-browser list is off. Design files (.json) still work normally.";
+  $("libHint").classList.add("alert");      // shown even while the notes are hidden
 }
 // the rows that match the search box: every word, in any of name, client, part #, type or date
 function libMatches(){
@@ -2490,6 +2511,70 @@ libRun(async()=>{
   libRender(); cloudUI();
 });
 
+/* ================= FOLDING PANELS — screen only ================= */
+// Every panel section (data-fold) opens and closes from its title. A closed input section shows a
+// one-line summary of what it holds, so nothing that changes the numbers is hidden without a trace.
+// The help notes (.hint) sit behind a "?" on the title. The browser remembers both (localStorage);
+// nothing here touches a design, a result, the drawing or the printouts.
+const FOLD_KEY="palletlab.ui.folds";
+let foldState={closed:[], help:[]};
+try{ const v=JSON.parse(localStorage.getItem(FOLD_KEY)||"null");
+     if(v && Array.isArray(v.closed) && Array.isArray(v.help)) foldState={closed:v.closed.filter(x=>typeof x==="string"), help:v.help.filter(x=>typeof x==="string")}; }catch(e){}
+const foldKeep = () => { try{ localStorage.setItem(FOLD_KEY,JSON.stringify(foldState)); }catch(e){} };
+const foldSecs = () => [...document.querySelectorAll(".sec[data-fold]")];
+// one line per closed input section, from the design as last worked out
+const FOLD_SUMMARY={
+  id:        m=>[$("partNo").value.trim(), $("client").value.trim()].filter(Boolean).join(" · ")+(m.cut.N>1 ? ` · ${m.cut.N.toLocaleString()} pcs` : ""),
+  footprint: m=>`${inch(m.L)} × ${inch(m.W)}`,
+  top:       m=>m.p.type==="box" && !m.p.hasB ? `${frac(m.p.fPT)} triplay floor`
+                : `${m.p.topIv.length} boards · ${inch(m.p.dT)}`+(m.p.type==="box" && m.p.hasP ? ` + ${frac(m.p.fPT)} triplay` : ""),
+  bottom:    m=>m.p.botIv.length ? `${m.p.botIv.length} boards · ${inch(m.p.bT)}` : "none",
+  stringers: m=>`${m.p.sC} × ${inch(m.p.sB).slice(0,-1)}×${inch(m.p.sH)}`+(m.p.notch ? " · notched" : ""),
+  blocks:    m=>`${m.p.nBL}×${m.p.nBW} blocks · ${inch(m.p.k)}`,
+  box:       m=>`${inch(m.p.wH)} walls · ${frac(m.p.pT)} ply`+(m.p.lid ? " · lid" : ""),
+  // the values the calculation uses (V keeps them inside each input's limits)
+  material:  ()=>`${(SPECIES[spSel.value]||{n:""}).n.split(" — ")[0]} · Fb ${V("Fb")}`,
+  analysis:  ()=>`SF ${Math.max(1,V("SF"))} · δ ${V("defPct")}%`,
+};
+function foldSummaries(m){
+  foldSecs().forEach(sec=>{
+    const f=FOLD_SUMMARY[sec.dataset.fold], out=sec.querySelector(":scope > h2 > .foldSum");
+    if(!f || !out) return;
+    // a section the pallet type hides has nothing to sum up; a summary never stops the update
+    let t=""; if(sec.style.display!=="none"){ try{ t=f(m); }catch(e){ t=""; } }
+    if(out.textContent!==t){ out.textContent=t; out.title=t; }     // the whole line on hover when it is cut short
+  });
+}
+function foldApply(sec){
+  const k=sec.dataset.fold, closed=foldState.closed.includes(k), help=foldState.help.includes(k);
+  sec.classList.toggle("collapsed",closed);
+  sec.classList.toggle("helpOn",help);
+  const h=sec.querySelector(":scope > h2");
+  h.setAttribute("aria-expanded",String(!closed));
+  const q=h.querySelector(".helpBtn"); if(q){ q.setAttribute("aria-pressed",String(help)); q.title=help ? "Hide the notes" : "Show the notes"; }
+}
+const foldFlip = (list,k) => { const i=list.indexOf(k); if(i>=0) list.splice(i,1); else list.push(k); };
+foldSecs().forEach(sec=>{
+  const k=sec.dataset.fold, h=sec.querySelector(":scope > h2");
+  sec.classList.add("foldable");
+  h.setAttribute("role","button"); h.tabIndex=0;
+  // the titles of the results panels are rewritten by the tool (PALLET DETAILS, CUT LIST — ORDER OF …):
+  // they get no extra parts, only the open/close arrow (CSS)
+  if(!h.id){
+    if(FOLD_SUMMARY[k]){ const s=document.createElement("span"); s.className="foldSum"; h.appendChild(s); }
+    if(sec.querySelector(".hint")){
+      const q=document.createElement("button"); q.type="button"; q.className="helpBtn"; q.textContent="?";
+      q.setAttribute("aria-label","Notes for "+h.firstChild.textContent.trim().toLowerCase());
+      q.addEventListener("click",e=>{ e.stopPropagation(); foldFlip(foldState.help,k); foldKeep(); foldApply(sec); });
+      q.addEventListener("keydown",e=>e.stopPropagation());
+      h.appendChild(q);
+    }
+  }
+  const flip=()=>{ foldFlip(foldState.closed,k); foldKeep(); foldApply(sec); };
+  h.addEventListener("click",flip);
+  h.addEventListener("keydown",e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); flip(); } });
+  foldApply(sec);
+});
 // a resize only changes the drawing area, not the design: redraw the design as last worked out
 window.addEventListener("resize",()=>drawScreen(lastModel||buildModel()));
 // redraw whenever the drawing area changes size (window resize, or the footer gaining a warning line)
