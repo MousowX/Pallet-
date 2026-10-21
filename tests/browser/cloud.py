@@ -7,7 +7,7 @@
 # and is renewed when it runs out; a session that can't be renewed signs out; offline at start and on
 # a save; sign out; copying this browser's list; the password is never stored.
 # Usage: python3 cloud.py [path/to/pallet-lab.html]     (needs Playwright, like flows.py)
-import asyncio, json, os, sys, tempfile, threading, time, secrets, pathlib
+import asyncio, json, os, re, sys, tempfile, threading, time, secrets, pathlib
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from playwright.async_api import async_playwright
@@ -132,9 +132,11 @@ async def main():
     api=serve(API); API_URL=f"http://127.0.0.1:{api.server_address[1]}"
     site=tempfile.mkdtemp(prefix="pallet-lab-cloud-")
     html=open(FILE,encoding="utf-8").read()
-    blank='const CLOUD={ url:"", key:"" };'
-    check(html.count(blank)==1, "the tool has its empty shared-list setting once")
-    open(os.path.join(site,"index.html"),"w",encoding="utf-8").write(html.replace(blank,f'const CLOUD={{ url:"{API_URL}", key:"{KEY}" }};'))
+    # the tool's shared-list setting, pointed at the stand-in (and, for check 0, left empty)
+    cfg=re.compile(r'const CLOUD={ url:"[^"]*", key:"[^"]*" };')
+    check(len(cfg.findall(html))==1, "the tool has its shared-list setting once")
+    open(os.path.join(site,"index.html"),"w",encoding="utf-8").write(cfg.sub(f'const CLOUD={{ url:"{API_URL}", key:"{KEY}" }};',html))
+    open(os.path.join(site,"blank.html"),"w",encoding="utf-8").write(cfg.sub('const CLOUD={ url:"", key:"" };',html))
     web=serve(lambda *a,**k: Quiet(*a,directory=site,**k)); URL=f"http://127.0.0.1:{web.server_address[1]}/"
     M.users={"ana@test.local":{"password":"pw-ana-1","member":True},"beto@test.local":{"password":"pw-beto-2","member":True},
              "ext@test.local":{"password":"pw-ext-3","member":False}}
@@ -156,7 +158,7 @@ async def main():
         names=lambda: [r["name"] for r in sorted(M.rows,key=lambda r:r["id"])]
 
         # ---------- 0. not set up: nothing shows ----------
-        ctx=await b.new_context(); pg=await ctx.new_page(); await pg.goto(pathlib.Path(FILE).as_uri()); await pg.wait_for_timeout(200)
+        ctx=await b.new_context(); pg=await ctx.new_page(); await pg.goto(URL+"blank.html"); await pg.wait_for_timeout(200)
         check(not await shown(pg,"cloudBox"), "0 without a Supabase project the shared-list controls are hidden")
         await ctx.close()
 
