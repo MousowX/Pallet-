@@ -51,8 +51,11 @@ header .sp{flex:1}
 .btnRow button:hover{border-color:var(--accent);color:var(--accent)}
 .btnRow button.dim{color:var(--faint)}
 .btnRow button.dim:hover{border-color:var(--bad);color:var(--bad)}
-#libSel{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+#libSel,#libFind{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
   font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px}
+#libFind{margin-bottom:5px}
+#libFind:focus{outline:none;border-color:var(--accent)}
+#libFind::placeholder{color:var(--faint)}
 
 /* ---------- viewport ---------- */
 /* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */
@@ -161,7 +164,8 @@ table.det td.bad{color:var(--bad)}
 <div id="main">
 <!-- ============ LEFT : DESIGN INPUTS ============ -->
 <div class="col">
-  <div class="sec"><h2>DESIGNS</h2>
+  <div class="sec" id="secLib"><h2>DESIGNS</h2>
+    <input type="search" id="libFind" placeholder="search saved designs" autocomplete="off" spellcheck="false">
     <select id="libSel"><option value="">— saved in this browser —</option></select>
     <div class="btnRow">
       <button id="btnLibSave">SAVE HERE</button>
@@ -171,8 +175,12 @@ table.det td.bad{color:var(--bad)}
       <button id="btnFileSave">⭳ SAVE FILE</button>
       <button id="btnFileLoad">⭱ LOAD FILE</button>
     </div>
+    <div class="btnRow">
+      <button id="btnImport" title="Add many design files to the list at once — the design on screen stays as it is">⭱ IMPORT FILES TO THE LIST</button>
+    </div>
     <input type="file" id="fileIn" accept=".json,application/json" style="display:none">
-    <div class="hint" id="libHint">A design file (.json) keeps every input — send it with the drawing or archive it per part number. Loading one restores the whole design.</div>
+    <input type="file" id="importIn" accept=".json,application/json" multiple style="display:none">
+    <div class="hint" id="libHint">Every design saved or loaded, here or as a file, goes into this list — search it by name, client or part #. A design file (.json) keeps every input: send it with the drawing or archive it per part number.</div>
   </div>
 
   <div class="sec"><h2>IDENTIFICATION</h2>
@@ -347,6 +355,10 @@ const SPECIES = [
 
 /* ================= STATE ================= */
 const $ = id => document.getElementById(id);
+// a results panel is rewritten only when what it shows has changed: a keystroke that leaves it as it was
+// (a client name, a value that only changes the cut list) costs that panel no rebuild and no re-layout
+const shownHTML = {};
+function setHTML(id,h){ if(shownHTML[id]!==h){ shownHTML[id]=h; $(id).innerHTML=h; } }
 let palletType = "stringer";
 const cv = $("cv"), ctx = cv.getContext("2d");
 
@@ -1126,31 +1138,31 @@ function palletDetails(m){
 
 function renderDetails(det){
   $("detTitle").textContent=det.title;
-  $("det").innerHTML=det.groups.map(g=>
+  setHTML("det",det.groups.map(g=>
     `<tr class="gh"><td colspan="2">${g.title}</td></tr>`+
     g.items.map(it=>`<tr><td>${it.k}</td><td${it.bad?' class="bad"':''}>${it.v}${it.note?`<small>${it.note}</small>`:""}</td></tr>`).join("")
-  ).join("");
+  ).join(""));
 }
 
 /* ================= RENDER: RESULTS ================= */
 const fmtLb = n => n>=99999 ? ">99,999" : Math.round(n).toLocaleString();
 function renderResults(m,a){
   const gov = a.modes.reduce((min,x)=>x.cap<min.cap?x:min, a.modes[0]);
-  $("cards").innerHTML = a.modes.map(x=>`
+  setHTML("cards", a.modes.map(x=>`
     <div class="card ${x===gov?'govern':''}">
       <div class="ct"><h3>${x.t}</h3></div>
       <div class="cap ${x.cap<1500?'mid':''}">${fmtLb(x.cap)} <small>lb</small></div>
       <div class="sub"><b>${x.note}</b><br>${x.k==="stack" ? "short-column crush basis · braced by walls" : `limited by ${x.gov} · δ ≈ ${x.defl.toFixed(2)}" at rated load`}</div>
-    </div>`).join("");
+    </div>`).join(""));
   return gov;
 }
 
 function renderBOM(m){
   const rows = m.bom.map(b=>`<tr><td>${b.q}×</td><td>${b.d}</td><td>${b.sf!=null? b.sf.toFixed(1)+" ft²" : b.bf.toFixed(2)+" BF"}</td></tr>`).join("");
-  $("bom").innerHTML = rows +
+  setHTML("bom", rows +
     `<tr class="tt"><td></td><td>Total lumber</td><td>${m.totBF.toFixed(2)} BF</td></tr>` +
     (m.totSF>0?`<tr class="tt"><td></td><td>Total plywood</td><td>${m.totSF.toFixed(1)} ft² · ${m.sheetTxt} (${m.cut.SW}×${m.cut.SL})</td></tr>`:"") +
-    `<tr class="tt"><td></td><td>Fasteners est. / weight est.</td><td>${m.nails} nails${m.lags?` · ${m.lags} lags 5/16×3"`:""} · ${m.weight.toFixed(0)} lb</td></tr>`;
+    `<tr class="tt"><td></td><td>Fasteners est. / weight est.</td><td>${m.nails} nails${m.lags?` · ${m.lags} lags 5/16×3"`:""} · ${m.weight.toFixed(0)} lb</td></tr>`);
 }
 
 /* ================= RENDER: CUT LIST (whole order) ================= */
@@ -1207,7 +1219,7 @@ function renderCut(m){
   });
   spliceNotes(c).forEach(t=>{ h+=`<div class="cutNote">⚠ ${t}</div>`; });
   h+=`<div class="cutNote">Nails ≈ <b>${(m.nails*n).toLocaleString()}</b>${m.lags?` · lag screws <b>${(m.lags*n).toLocaleString()}</b>`:""}${c.ply.length?" · hover a sheet for its parts":""}</div>`;
-  $("cutList").innerHTML=h;
+  setHTML("cutList",h);
 }
 // printable cut list — for the shop, or for whoever supplies the wood
 function buildCutSheet(m){
@@ -1585,11 +1597,16 @@ function drawSpec2D(c2,w,h,m,pal,inset=0){   // inset: room kept clear at the to
   }
 }
 
+// The canvas memory is set up again only when the drawing area changes size (setting its width or
+// height always reallocates and clears it). Each drawing still starts from the same clean state: it is
+// wrapped in save/restore, and drawSpec2D clears the whole area first.
+let cvSize="";
 function drawScreen(m){
-  const w=cv.clientWidth, h=cv.clientHeight;
-  cv.width=w*devicePixelRatio; cv.height=h*devicePixelRatio;
+  const w=cv.clientWidth, h=cv.clientHeight, size=w+"x"+h+"@"+devicePixelRatio;
+  if(size!==cvSize){ cvSize=size; cv.width=w*devicePixelRatio; cv.height=h*devicePixelRatio; }
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-  drawSpec2D(ctx,w,h,m,PAL_SCREEN,18);
+  ctx.save();
+  try{ drawSpec2D(ctx,w,h,m,PAL_SCREEN,18); }finally{ ctx.restore(); }
 }
 
 function printDrawingPNG(m){
@@ -1672,8 +1689,11 @@ function flushSpec(){
   if(specLast){ specDay=day; buildSpec(...specLast); }
 }
 window.addEventListener("beforeprint", flushSpec);
+// the design as last shown: a resize redraws it instead of working the whole design out again
+let lastModel=null;
 function update(msg){
   const m=buildModel();
+  lastModel=m;
   const a=analyze(m);
   const gov=renderResults(m,a);
   renderDetails(m.det);
@@ -1696,10 +1716,10 @@ function update(msg){
     else over.forEach(([w,n,h])=>warn.push(`horizontal cleats: ${n}×${m.p.cw}″ exceeds the ${h.toFixed(1)}″ ${w} panel`));
     if(m.p.iL<=0||m.p.iW<=0) warn.push("interior clear is zero or negative");
   }
-  $("warn").innerHTML = warn.map(w=>"⚠ "+w).join("<br>");
-  $("vpDims").innerHTML =
+  setHTML("warn", warn.map(w=>"⚠ "+w).join("<br>"));
+  setHTML("vpDims",
     `<b>${m.L}″ × ${m.W}″ × ${m.H.toFixed(2)}″</b> · ${m.totBF.toFixed(1)} BF · ${m.weight.toFixed(0)} lb tare${extra}<br>`+
-    `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`;
+    `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`);
   drawScreen(m);               // last: the footer text above sets how much height the drawing gets
   if(msg) toast(msg);
 }
@@ -1805,8 +1825,9 @@ $("btnReset").addEventListener("click",()=>{
 /* ================= SAVE / LOAD DESIGNS ================= */
 const FMT="pallet-lab/1";
 // every labelled control in the input columns — collected live so nothing is ever missed
+// (the DESIGNS section — list, search box, file pickers — isn't part of a design)
 const ctrls = () => Array.from(document.querySelectorAll('#main input[id], #main select[id]'))
-                         .filter(el=>el.type!=="file" && el.id!=="libSel");   // the library picker isn't part of a design
+                         .filter(el=>el.type!=="file" && !el.closest("#secLib"));
 
 function collectState(){
   const f={};
@@ -1842,12 +1863,17 @@ const MIGRATE={
   nDep:   f=>"nLen" in f ? undefined : String(Math.ceil(Math.min(1.5, 0.4*oldNum(f.sHgt,2,6))*8-1e-9)/8),
 };
 const TYPES={stringer:"tStr",block:"tBlk",box:"tBox"};
-function applyState(st,msg){
-  // everything is checked before the screen is touched, so a bad file leaves the current design as it was
+// a design file the tool can open, or an error saying why not; gives its pallet type
+function checkDesign(st){
   if(!st||typeof st!=="object"||st.fmt!==FMT||!st.f||typeof st.f!=="object"||Array.isArray(st.f))
     throw new Error("not a PALLET\u00b7LAB design file");
   const type = st.type==null ? "stringer" : st.type;
   if(!Object.prototype.hasOwnProperty.call(TYPES,type)) throw new Error("unknown pallet type in the file");
+  return type;
+}
+function applyState(st,msg){
+  // everything is checked before the screen is touched, so a bad file leaves the current design as it was
+  const type=checkDesign(st);
   const byId={}; ctrls().forEach(el=>byId[el.id]=el);
   const has=id=>Object.prototype.hasOwnProperty.call(st.f,id);
   // a value a control can actually take: text or a number, and for a list one of its choices
@@ -1875,8 +1901,145 @@ function applyState(st,msg){
   update(msg + (notes.length?` (${notes.join(", ")})`:""));
 }
 
+/* ================= DESIGN DATABASE — every saved design, kept in this browser ================= */
+// One database (IndexedDB) holds every design: the ones saved here, every design file saved or loaded,
+// and files imported in bulk. It has two stores, so the list never has to read the designs themselves:
+//   list   {id, name, type, client, partNo, saved, source}   one small row per design (id: order added)
+//   files  {id, state}                                        the design file, read only when it is opened
+// A save writes one design instead of rewriting the whole list, the list is read once per change and
+// searched in memory, and nothing runs while the tool is idle. Designs are stored in the design file
+// format ({fmt, type, saved, f}), so applyState opens them exactly like a file.
+// Where IndexedDB is missing or refused, the same calls use the older in-browser list (localStorage
+// "palletlab.designs"), as the tool always did. Designs in that list move into the database the first
+// time it opens; the old list is kept as it was under "palletlab.designs.backup".
+const LIB="palletlab.designs", LIB_BACKUP=LIB+".backup", LIB_PING=LIB+".changed";
+const DB_NAME="palletlab", DB_VERSION=1;
+
+// what went wrong, in the terms the list reports: "full", "blocked" (storage refused) or "other"
+function dbError(kind,cause){ const e=new Error(cause && cause.message || kind); e.kind=kind; return e; }
+const isQuota=e=>/quota/i.test(e && e.name || "");
+
+// entries of the older list that can be used: a name and a design (anything else is left out)
+function legacyList(raw){
+  let v; try{ v=JSON.parse(raw||"[]"); }catch(e){ return []; }
+  return Array.isArray(v) ? v.filter(d=>d && typeof d==="object" && typeof d.name==="string" && d.name.trim()
+                                       && d.state && typeof d.state==="object") : [];
+}
+// a design's row in the list: what the list shows and what a search looks at
+function designRow(name,state,source){
+  const f = state.f && typeof state.f==="object" ? state.f : {}, s=v=>typeof v==="string" ? v : "";
+  return {name, type:s(state.type)||"stringer", client:s(f.client), partNo:s(f.partNo),
+          saved:state.saved ? String(state.saved) : "", source};
+}
+
+/* ---- IndexedDB ---- */
+function idbOpen(){
+  return new Promise((ok,no)=>{
+    let rq;
+    try{ rq=indexedDB.open(DB_NAME,DB_VERSION); }catch(e){ no(e); return; }      // missing, or refused outright
+    rq.onupgradeneeded=()=>{
+      const db=rq.result;
+      if(!db.objectStoreNames.contains("list"))
+        db.createObjectStore("list",{keyPath:"id",autoIncrement:true}).createIndex("name","name",{unique:true});
+      if(!db.objectStoreNames.contains("files")) db.createObjectStore("files",{keyPath:"id"});
+    };
+    rq.onsuccess=()=>{ const db=rq.result; db.onversionchange=()=>db.close(); ok(db); };   // let a newer version upgrade it
+    rq.onerror=()=>no(rq.error);
+  });
+}
+function idbBackend(db){
+  // one transaction over both stores: `work` queues its requests and fills `out`. Every callback is
+  // guarded, and any error aborts the whole transaction, so a design is never half written
+  const run=(mode,work)=>new Promise((ok,no)=>{
+    let t, failed=null; const out={};
+    const fail=e=>{ if(!failed){ failed=e; try{ t.abort(); }catch(_){} } };
+    const guard=fn=>(...a)=>{ try{ fn(...a); }catch(e){ fail(e); } };
+    try{ t=db.transaction(["list","files"],mode); }catch(e){ no(dbError(isQuota(e)?"full":"other",e)); return; }
+    t.oncomplete=()=>ok(out);
+    t.onabort=()=>{ const e=failed||t.error; no(dbError(isQuota(e)?"full":"other",e)); };
+    try{ work(t.objectStore("list"), t.objectStore("files"), out, guard); }catch(e){ fail(e); }
+  });
+  // add a design, or replace the one with the same name (it keeps its place in the list); done(id, updated)
+  const upsert=(list,files,guard,{name,state,source},done)=>{
+    const rq=list.index("name").getKey(name);
+    rq.onsuccess=guard(()=>{
+      const row=designRow(name,state,source), id=rq.result;
+      if(id!==undefined){ row.id=id; list.put(row); files.put({id,state}); done(id,true); return; }
+      const add=list.add(row);
+      add.onsuccess=guard(()=>{ files.put({id:add.result,state}); done(add.result,false); });
+    });
+  };
+  return {
+    kind:"db",
+    list:()=>run("readonly",(list,files,out,guard)=>{
+      const rq=list.getAll();
+      rq.onsuccess=guard(()=>{ out.rows=rq.result.filter(r=>r && typeof r.name==="string" && r.name.trim()); });
+    }).then(o=>o.rows),
+    get:id=>run("readonly",(list,files,out,guard)=>{
+      const rq=files.get(id);
+      rq.onsuccess=guard(()=>{ out.state=rq.result ? rq.result.state : undefined; });
+    }).then(o=>o.state),
+    save:(name,state,source)=>run("readwrite",(list,files,out,guard)=>
+      upsert(list,files,guard,{name,state,source},(id,updated)=>{ out.id=id; out.updated=updated; })),
+    // many designs in one transaction (all or nothing), one after the other so repeated names update
+    saveMany:items=>run("readwrite",(list,files,out,guard)=>{
+      out.added=0; out.updated=0;
+      const next=i=>{ if(i<items.length) upsert(list,files,guard,items[i],(id,upd)=>{ out[upd?"updated":"added"]++; next(i+1); }); };
+      next(0);
+    }),
+    remove:id=>run("readwrite",(list,files)=>{ list.delete(id); files.delete(id); }).then(()=>{}),
+  };
+}
+// the first time the database opens, the designs of the older in-browser list move into it, in order
+async function idbMigrate(be){
+  let raw=null;
+  try{ raw=localStorage.getItem(LIB); }catch(e){ return; }       // storage blocked: nothing to move
+  if(raw==null) return;
+  const items=legacyList(raw).map(d=>({name:d.name, state:d.state, source:"browser"}));
+  if(items.length) await be.saveMany(items);                     // fails → the old list stays for next time
+  try{ localStorage.removeItem(LIB); localStorage.setItem(LIB_BACKUP,raw); }catch(e){}
+}
+
+/* ---- the older in-browser list (localStorage): used only where IndexedDB can't be ---- */
+// The whole list is one JSON value, read and written as the tool always did; a design's id is its name.
+const localBackend={
+  kind:"local",
+  read(){ let raw; try{ raw=localStorage.getItem(LIB); }catch(e){ throw dbError("blocked",e); } return legacyList(raw); },
+  // a full storage is not a blocked one: the list stays on so designs can be deleted to make room
+  write(list){ try{ localStorage.setItem(LIB,JSON.stringify(list)); }catch(e){ throw dbError(isQuota(e)?"full":"blocked",e); } },
+  async list(){ return this.read().map(d=>({id:d.name, ...designRow(d.name,d.state,"browser")})); },
+  async get(id){ const d=this.read().find(d=>d.name===id); return d ? d.state : undefined; },
+  async save(name,state){
+    const list=this.read(), at=list.findIndex(d=>d.name===name);
+    if(at>=0) list[at]={name,state}; else list.push({name,state});
+    this.write(list); return {id:name, updated:at>=0};
+  },
+  async saveMany(items){
+    const list=this.read(); let updated=0;
+    items.forEach(({name,state})=>{ const at=list.findIndex(d=>d.name===name);
+      if(at>=0){ list[at]={name,state}; updated++; } else list.push({name,state}); });
+    this.write(list); return {added:items.length-updated, updated};
+  },
+  async remove(id){
+    const list=this.read(), at=list.findIndex(d=>d.name===id);
+    if(at>=0){ list.splice(at,1); this.write(list); }
+  },
+};
+
+// the database, or the older list where IndexedDB can't be used. Rejects with kind "blocked" when this
+// browser refuses storage altogether.
+async function designDBOpen(){
+  let db=null;
+  try{ db=await idbOpen(); }catch(e){ db=null; }
+  if(db){ const be=idbBackend(db); try{ await idbMigrate(be); }catch(e){ /* tried again next time */ } return be; }
+  localBackend.read();
+  return localBackend;
+}
 /* ---- design file ---- */
+// Every file saved or loaded also goes into the design list (libAdd), under the file's name.
 const slug = s => (s||"").trim().replace(/[^\p{L}\p{N}_.-]+/gu,"-").replace(/^-+|-+$/g,"");
+// the list name of a design file: its file name without ".pltlab.json" / ".json"
+const fileDesignName = n => n.replace(/\.pltlab\.json$/i,"").replace(/\.json$/i,"") || n;
 $("btnFileSave").addEventListener("click",()=>{
   const st=collectState();
   const name=[slug($("partNo").value), slug($("client").value), palletType]
@@ -1887,91 +2050,212 @@ $("btnFileSave").addEventListener("click",()=>{
   document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
   toast("Saved "+a.download);
+  libAdd(name, st, "file", "Saved "+a.download);
 });
 $("btnFileLoad").addEventListener("click",()=>$("fileIn").click());
 $("fileIn").addEventListener("change",e=>{
   const file=e.target.files[0]; if(!file) return;
   const r=new FileReader();
   r.onload=()=>{
-    let st=null;
+    let st=null, ok=false;
     try{ st=JSON.parse(r.result); }catch(e){ /* not JSON: reported below like any other wrong file */ }
-    try{ applyState(st, "Loaded "+file.name); }
+    try{ applyState(st, "Loaded "+file.name); ok=true; }
     catch(err){ toast("Could not load "+file.name+": "+err.message); }
     $("fileIn").value="";
+    if(ok) libAdd(fileDesignName(file.name), st, "file", "Loaded "+file.name);
   };
   r.onerror=()=>{ toast("Could not read that file"); $("fileIn").value=""; };
   r.readAsText(file);
 });
+// many design files at once, straight into the list (the design on screen stays as it is)
+$("btnImport").addEventListener("click",()=>$("importIn").click());
+$("importIn").addEventListener("change",e=>{
+  const files=[...e.target.files];
+  $("importIn").value="";                // the same files can be picked again
+  if(files.length) libImport(files);
+});
+// a file's text, or null when it can't be read
+const readText = file => new Promise(ok=>{
+  const r=new FileReader();
+  r.onload=()=>ok(String(r.result)); r.onerror=()=>ok(null);
+  r.readAsText(file);
+});
 
-/* ---- browser library (optional — degrades if storage is blocked) ---- */
-const LIB="palletlab.designs";
-let libOK=true, libFull=false, libNames=[];
-// storage that is blocked turns the list off; a list that can't be read (damaged, or written by
-// another page) counts as empty, and entries without a name and a design are left out
-function libRead(){
-  let raw;
-  try{ raw=localStorage.getItem(LIB); }catch(e){ libOK=false; return []; }
-  let v; try{ v=JSON.parse(raw||"[]"); }catch(e){ return []; }
-  return Array.isArray(v) ? v.filter(d=>d && typeof d==="object" && typeof d.name==="string" && d.name.trim()
-                                       && d.state && typeof d.state==="object") : [];
+/* ---- design list: every design in the database, searchable (off if this browser blocks storage) ---- */
+let designDB=null, libOK=true, libRows=[], libQ=Promise.resolve();
+// list work runs one step at a time, in order, so a pick never reads a list that a save is still changing
+function libRun(fn){ const p=libQ.then(fn); libQ=p.catch(()=>{}); return p; }
+// resolves once the list has settled (the browser checks wait on it)
+function libIdle(){ return libQ.then(()=>{}); }
+// search text: no capitals, no accents (Peñoles finds penoles)
+const fold = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+// the rows, read again once per change (never per keystroke); each keeps the text a search looks at
+async function libReload(){
+  const s=v=>typeof v==="string" ? v : "";
+  libRows=(await designDB.list()).map(r=>{
+    const row={id:r.id, name:r.name, client:s(r.client), partNo:s(r.partNo), type:s(r.type), saved:s(r.saved)};
+    row.q=fold([row.name, row.client, row.partNo, row.type, row.saved.slice(0,10)].join(" "));
+    return row;
+  });
 }
-// a full storage is not a blocked one: the list stays on so designs can be deleted to make room
-function libWrite(list){
-  libFull=false;
-  try{ localStorage.setItem(LIB,JSON.stringify(list)); return true; }
-  catch(e){ if(/quota/i.test(e && e.name || "")) libFull=true; else libOK=false; return false; }
+function libOff(){
+  libOK=false; libRows=[];
+  ["libSel","libFind","btnLibSave","btnLibDel","btnImport"].forEach(id=>{ $(id).disabled=true; });
+  $("libHint").textContent="This browser is blocking local storage, so the in-browser list is off. Design files (.json) still work normally.";
 }
-function libRefresh(sel){
-  const list=libRead(), s=$("libSel");
-  libNames=list.map(d=>d.name);
-  s.innerHTML='<option value="">\u2014 saved in this browser \u2014</option>'+
-    list.map((d,i)=>`<option value="${i}">${esc(d.name)} \u00b7 ${esc(String(d.state.saved||"").slice(0,10))}</option>`).join("");
-  if(sel!=null) s.value=sel;
-  if(!libOK){
-    $("libSel").disabled=true; $("btnLibSave").disabled=true; $("btnLibDel").disabled=true;
-    $("libHint").textContent="This browser is blocking local storage, so the in-browser list is off. Design files (.json) still work normally.";
-  }
+// the rows that match the search box: every word, in any of name, client, part #, type or date
+function libMatches(){
+  const words=fold($("libFind").value).split(/\s+/).filter(Boolean);
+  return {words, rows: words.length ? libRows.filter(r=>words.every(w=>r.q.includes(w))) : libRows};
 }
+// show the list; `keep` (an id) stays picked when it is shown
+function libRender(keep){
+  const s=$("libSel"), {words,rows}=libMatches(), n=libRows.length;
+  const opt=(v,t)=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; return o; };
+  const frag=document.createDocumentFragment();
+  frag.appendChild(opt("", !words.length ? "\u2014 saved in this browser \u2014"
+                         : rows.length ? `\u2014 ${rows.length} of ${n} match \u2014` : "\u2014 no match \u2014"));
+  rows.forEach(r=>frag.appendChild(opt(String(r.id), r.name+" \u00b7 "+r.saved.slice(0,10))));
+  s.textContent=""; s.appendChild(frag);
+  s.value = keep!=null && rows.some(r=>String(r.id)===String(keep)) ? String(keep) : "";
+  $("libFind").placeholder=`search ${n} saved design${n===1?"":"s"}`;
+}
+const libRow = v => libRows.find(r=>String(r.id)===v);
+// reload from the database and show it, keeping `keep` picked
+function libRefresh(keep){
+  return libRun(async()=>{
+    if(!libOK) return;
+    try{ await libReload(); }catch(e){ libOff(); }
+    libRender(keep);
+  });
+}
+// a design saved here, saved as a file or loaded from one: show it picked, clearing a search that hides it
+function libShow(id){
+  if(!libMatches().rows.some(r=>r.id===id)) $("libFind").value="";
+  libRender(id);
+}
+// tell other tabs the list changed (they reload it)
+let libBC=null;
+try{ libBC=new BroadcastChannel(LIB); libBC.onmessage=()=>libChanged(); }catch(e){ libBC=null; }
+function libNotify(){
+  try{ localStorage.setItem(LIB_PING, Date.now()+":"+Math.random()); }catch(e){}
+  try{ if(libBC) libBC.postMessage("changed"); }catch(e){}
+}
+let libChangedT=0;
+function libChanged(){
+  clearTimeout(libChangedT);
+  libChangedT=setTimeout(()=>{ const v=$("libSel").value; libRefresh(v==="" ? null : v); },30);
+}
+// another tab saved or deleted a design: reload the list, keeping the one picked here
+window.addEventListener("storage",e=>{
+  if(e.key===LIB_PING || e.key===null || (designDB && designDB.kind==="local" && e.key===LIB)) libChanged();
+});
+
+// a design file saved or loaded goes into the list too, quietly: only a failure is reported
+// (`done` is what the toast already says)
+function libAdd(name,state,source,done){
+  return libRun(async()=>{
+    if(!libOK) return;
+    let r;
+    try{ r=await designDB.save(name,state,source); }
+    catch(e){
+      if(e.kind==="blocked"){ libOff(); libRender(); return; }
+      toast(done+(e.kind==="full" ? " — this browser's storage is full, so it was not added to the design list"
+                                  : " — it could not be added to the design list"));
+      return;
+    }
+    try{ await libReload(); }catch(e){ libOff(); }
+    libShow(r.id); libNotify();
+  });
+}
+// many design files into the list in one go; files that aren't designs are counted and skipped
+function libImport(files){
+  return libRun(async()=>{
+    if(!libOK) return;
+    const texts=await Promise.all(files.map(readText)), items=[];
+    texts.forEach((t,i)=>{
+      let st=null;
+      try{ st=JSON.parse(t); checkDesign(st); }catch(e){ return; }
+      items.push({name:fileDesignName(files[i].name), state:st, source:"import"});
+    });
+    const bad=files.length-items.length;
+    if(!items.length){ toast(`Nothing imported: ${bad===1 ? "the file is" : `the ${bad} files are`} not PALLET\u00b7LAB design files`); return; }
+    let r;
+    try{ r=await designDB.saveMany(items); }
+    catch(e){
+      if(e.kind==="blocked"){ libOff(); libRender(); }
+      toast(e.kind==="full" ? "This browser's storage is full — nothing was imported. Delete saved designs to make room"
+                            : "Could not import into this browser");
+      return;
+    }
+    const keep=$("libSel").value;
+    try{ await libReload(); }catch(e){ libOff(); }
+    libRender(keep==="" ? null : keep); libNotify();
+    const n=r.added+r.updated;
+    toast(`Imported ${n} design${n===1?"":"s"}`+(r.updated ? ` (${r.updated} replaced a saved design of the same name)` : "")+
+          (bad ? ` · ${bad} file${bad===1?"":"s"} skipped: not design files` : ""));
+  });
+}
+
+$("libFind").addEventListener("input",()=>{ const v=$("libSel").value; libRender(v==="" ? null : v); });
+$("libFind").addEventListener("keydown",e=>{ if(e.key==="Escape" && $("libFind").value){ $("libFind").value=""; libRender($("libSel").value); } });
 $("btnLibSave").addEventListener("click",()=>{
   const dflt=($("partNo").value.trim()||$("client").value.trim()||palletType+" "+$("L").value+"x"+$("W").value);
   const name=(window.prompt("Save design as:",dflt)||"").trim();
   if(!name) return;
-  const list=libRead();
   const st=collectState();
-  const at=list.findIndex(d=>d.name===name);
-  if(at>=0) list[at]={name,state:st}; else list.push({name,state:st});
-  if(libWrite(list)){ libRefresh(at>=0?at:list.length-1); toast((at>=0?"Updated ":"Saved ")+name); }
-  else { libRefresh(); toast(libFull ? "This browser's storage is full — delete a saved design, or use SAVE FILE"
-                                      : "Could not save to this browser"); }
+  libRun(async()=>{
+    if(!libOK) return;
+    let r;
+    try{ r=await designDB.save(name,st,"browser"); }
+    catch(e){
+      if(e.kind==="blocked") libOff();
+      else { try{ await libReload(); }catch(_){ libOff(); } }
+      libRender($("libSel").value);
+      toast(e.kind==="full" ? "This browser's storage is full — delete a saved design, or use SAVE FILE"
+                            : "Could not save to this browser");
+      return;
+    }
+    try{ await libReload(); }catch(e){ libOff(); }
+    libShow(r.id); toast((r.updated?"Updated ":"Saved ")+name); libNotify();
+  });
 });
 $("libSel").addEventListener("change",()=>{
-  const i=$("libSel").value; if(i==="") return;
-  const d=libRead()[+i]; if(!d) return;
-  try{ applyState(d.state,"Loaded "+d.name); }catch(err){ toast("Could not load: "+err.message); }
+  const v=$("libSel").value; if(v==="") return;
+  const d=libRow(v); if(!d) return;
+  libRun(async()=>{
+    let st;
+    try{ st=await designDB.get(d.id); }catch(e){ toast("Could not load: this browser's storage could not be read"); return; }
+    if($("libSel").value!==v) return;             // another design was picked meanwhile
+    try{ applyState(st,"Loaded "+d.name); }catch(err){ toast("Could not load: "+err.message); }
+  });
 });
 $("btnLibDel").addEventListener("click",()=>{
-  const i=$("libSel").value;
-  if(i===""){ toast("Pick a saved design first"); return; }
-  const list=libRead(), d=list[+i]; if(!d) return;
+  const v=$("libSel").value;
+  if(v===""){ toast("Pick a saved design first"); return; }
+  const d=libRow(v); if(!d) return;
   if(!window.confirm('Delete "'+d.name+'" from this browser?')) return;
-  list.splice(+i,1);
-  if(libWrite(list)){ libRefresh(); toast("Deleted "+d.name); } else { libRefresh(); toast("Could not delete from this browser"); }
+  libRun(async()=>{
+    let ok=true;
+    try{ await designDB.remove(d.id); }catch(e){ ok=false; if(e.kind==="blocked") libOff(); }
+    if(libOK){ try{ await libReload(); }catch(e){ libOff(); } }
+    libRender(ok ? null : v);
+    toast(ok ? "Deleted "+d.name : "Could not delete from this browser");
+    if(ok) libNotify();
+  });
 });
-libRefresh();
-// another tab saved or deleted a design: reload the list, keeping the one picked here
-window.addEventListener("storage",e=>{
-  if(e.key!==LIB && e.key!==null) return;
-  const v=$("libSel").value, name = v==="" ? null : libNames[+v];
-  libRefresh();
-  const at = name==null ? -1 : libNames.indexOf(name);
-  if(at>=0) $("libSel").value=String(at);
+// open the database (moving the older in-browser list into it the first time) and show the list
+libRun(async()=>{
+  try{ designDB=await designDBOpen(); await libReload(); }catch(e){ libOff(); }
+  libRender();
 });
 
-window.addEventListener("resize",()=>drawScreen(buildModel()));
+// a resize only changes the drawing area, not the design: redraw the design as last worked out
+window.addEventListener("resize",()=>drawScreen(lastModel||buildModel()));
 // redraw whenever the drawing area changes size (window resize, or the footer gaining a warning line)
 if(window.ResizeObserver){
   let lastWH="";
-  new ResizeObserver(()=>{ const k=cv.clientWidth+"x"+cv.clientHeight; if(k!==lastWH){ lastWH=k; drawScreen(buildModel()); } })
+  new ResizeObserver(()=>{ const k=cv.clientWidth+"x"+cv.clientHeight; if(k!==lastWH){ lastWH=k; drawScreen(lastModel||buildModel()); } })
     .observe($("cvWrap"));
 }
 window.addEventListener("keydown",e=>{

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PALLET·LAB — Design · Analysis</title>
+<style>
+/*@build:css*/
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>PALLET<span>·LAB</span></h1>
+  <div class="typeToggle">
+    <button id="tStr" class="on">STRINGER</button>
+    <button id="tBlk">BLOCK</button>
+    <button id="tBox">PALLET BOX</button>
+  </div>
+  <div class="sp"></div>
+  <button class="hbtn" id="btnReset">RESET GMA 48×40</button>
+  <button class="hbtn" id="btnCut">⎙ CUT LIST</button>
+  <button class="hbtn" id="btnPrint">⎙ PRINT SPEC SHEET</button>
+</header>
+
+<div id="main">
+<!-- ============ LEFT : DESIGN INPUTS ============ -->
+<div class="col">
+  <div class="sec" id="secLib"><h2>DESIGNS</h2>
+    <input type="search" id="libFind" placeholder="search saved designs" autocomplete="off" spellcheck="false">
+    <select id="libSel"><option value="">— saved in this browser —</option></select>
+    <div class="btnRow">
+      <button id="btnLibSave">SAVE HERE</button>
+      <button id="btnLibDel" class="dim">DELETE</button>
+    </div>
+    <div class="btnRow">
+      <button id="btnFileSave">⭳ SAVE FILE</button>
+      <button id="btnFileLoad">⭱ LOAD FILE</button>
+    </div>
+    <div class="btnRow">
+      <button id="btnImport" title="Add many design files to the list at once — the design on screen stays as it is">⭱ IMPORT FILES TO THE LIST</button>
+    </div>
+    <input type="file" id="fileIn" accept=".json,application/json" style="display:none">
+    <input type="file" id="importIn" accept=".json,application/json" multiple style="display:none">
+    <div class="hint" id="libHint">Every design saved or loaded, here or as a file, goes into this list — search it by name, client or part #. A design file (.json) keeps every input: send it with the drawing or archive it per part number.</div>
+  </div>
+
+  <div class="sec"><h2>IDENTIFICATION</h2>
+    <div class="row"><label>Client</label><input type="text" id="client" placeholder="—" maxlength="60"></div>
+    <div class="row"><label>Part #</label><input type="text" id="partNo" placeholder="—" maxlength="40"></div>
+    <div class="row"><label>Order quantity</label><input type="number" id="orderQty" value="1" step="1" min="1" max="100000"><span class="unit">pcs</span></div>
+  </div>
+
+  <div class="sec"><h2>FOOTPRINT</h2>
+    <div class="row"><label>Length (stringer dir.)</label><input type="number" id="L" value="48" step="1" min="12" max="240"><span class="unit">in</span></div>
+    <div class="row"><label>Width (deck dir.)</label><input type="number" id="W" value="40" step="1" min="12" max="240"><span class="unit">in</span></div>
+  </div>
+
+  <div class="sec"><h2>TOP DECK</h2>
+    <div class="row"><label>Board count</label><input type="number" id="dCount" value="7" step="1" min="2" max="40"><span class="unit"></span></div>
+    <div class="row"><label>Board width</label><input type="number" id="dWidth" value="3.5" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>End board width</label><input type="number" id="dLead" value="5.5" placeholder="same" data-blank="same" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>Board thickness</label><input type="number" id="dThk" value="0.75" step="0.0625" min="0.375" max="2"><span class="unit">in</span></div>
+  </div>
+
+  <div class="sec"><h2>BOTTOM DECK</h2>
+    <div class="row"><label>Board count</label><input type="number" id="bCount" value="5" step="1" min="0" max="40"><span class="unit"></span></div>
+    <div class="row"><label>Board width</label><input type="number" id="bWidth" value="3.5" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>End board width</label><input type="number" id="bLead" value="5.5" placeholder="same" data-blank="same" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>Board thickness</label><input type="number" id="bThk" value="0.75" step="0.0625" min="0.375" max="2"><span class="unit">in</span></div>
+    <div class="row" id="rowBotLay"><label>Layout</label><select id="bLay">
+      <option value="notch" selected>Clear the notches (GMA)</option>
+      <option value="even">Even spacing</option>
+    </select></div>
+    <div class="hint">End boards are the two at the pallet ends (leave blank for the same width as the rest). "Clear the notches" keeps the inner bottom boards between the notches so forks can enter from the sides.</div>
+  </div>
+
+  <div class="sec" id="secStringer"><h2>STRINGERS</h2>
+    <div class="row"><label>Count</label><input type="number" id="sCount" value="3" step="1" min="2" max="9"><span class="unit"></span></div>
+    <div class="row"><label>Thickness (b)</label><input type="number" id="sThk" value="1.5" step="0.125" min="0.75" max="4"><span class="unit">in</span></div>
+    <div class="row"><label>Height (h)</label><input type="number" id="sHgt" value="3.5" step="0.25" min="2" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Notched (fork entry)</label><select id="sNotch"><option value="1">Yes — 4-way</option><option value="0">No — 2-way</option></select></div>
+    <div class="row notchRow"><label>Notch length</label><input type="number" id="nLen" value="9" step="0.5" min="4" max="16"><span class="unit">in</span></div>
+    <div class="row notchRow"><label>Notch depth</label><input type="number" id="nDep" value="1.5" step="0.125" min="0.5" max="3"><span class="unit">in</span></div>
+    <div class="row notchRow"><label>Between notches</label><input type="number" id="nGap" value="13" step="0.25" min="0" max="230"><span class="unit">in</span></div>
+    <div class="hint notchRow">The two notches are centered on the stringer, this far apart; the distance to each end follows.</div>
+  </div>
+
+  <div class="sec" id="secBox" style="display:none"><h2>BOX — CLEATED PLYWOOD PANELS</h2>
+    <div class="row"><label>Base type</label><select id="boxBase">
+      <option value="stringer" selected>Stringer base</option>
+      <option value="block">Block base — 4-way</option>
+    </select></div>
+    <div class="row"><label>Box floor</label><select id="floorType">
+      <option value="boards" selected>Deckboards (tablas)</option>
+      <option value="ply">Triplay sheet — no boards</option>
+      <option value="plyboards">Triplay over boards</option>
+    </select></div>
+    <div class="row" id="rowFloorPly" style="display:none"><label>Floor triplay</label><select id="floorPlyT">
+      <option value="0.375">3/8″ (9 mm)</option>
+      <option value="0.5" selected>1/2″ (12 mm)</option>
+      <option value="0.625">5/8″ (15 mm)</option>
+      <option value="0.75">3/4″ (18 mm)</option>
+    </select></div>
+    <div class="row"><label>Wall height</label><input type="number" id="wH" value="30" step="1" min="6" max="120"><span class="unit">in</span></div>
+    <div class="row"><label>Plywood panel</label><select id="plyT">
+      <option value="0.25">1/4″ (6 mm)</option>
+      <option value="0.375" selected>3/8″ (9 mm)</option>
+      <option value="0.5">1/2″ (12 mm)</option>
+      <option value="0.625">5/8″ (15 mm)</option>
+      <option value="0.75">3/4″ (18 mm)</option>
+    </select></div>
+    <div class="row"><label>Cleat (t×w)</label><input type="number" id="cleatT" value="0.75" step="0.125" min="0.5" max="2" style="width:58px;padding:4px 3px"><input type="number" id="cleatW" value="3.5" step="0.25" min="1.5" max="6" style="width:58px;padding:4px 3px"><span class="unit">in</span></div>
+    <div class="row"><label>Cleat stock</label><select id="cleatMat">
+      <option value="lumber" selected>Lumber (1×4)</option>
+      <option value="ply">Plywood rips</option>
+    </select></div>
+    <div class="row"><label>Max cleat spacing</label><input type="number" id="clSp" value="24" step="1" min="8" max="48"><span class="unit">in</span></div>
+    <div class="row"><label>Edge / corner cleats</label><select id="edgeCl">
+      <option value="in" selected>Interior — inside panel</option>
+      <option value="out">Exterior — laps corner joint</option>
+    </select></div>
+    <div class="row"><label>Intermediate cleats</label><select id="clOrient">
+      <option value="v" selected>Vertical</option>
+      <option value="h">Horizontal</option>
+    </select></div>
+    <div class="row"><label>Base attachment</label><select id="attach">
+      <option value="skirt" selected>Skirted — panels overlap base</option>
+      <option value="surface">On-deck — lag screws</option>
+    </select></div>
+    <div class="row skirtRow"><label>Side panel lap</label><input type="number" id="sideOv" value="2.5" step="0.25" min="0" max="8"><span class="unit">in</span></div>
+    <div class="row skirtRow"><label>End panel lap</label><input type="number" id="endOv" value="0.75" step="0.25" min="0" max="8"><span class="unit">in</span></div>
+    <div class="row"><label>Lid</label><select id="boxLid"><option value="1">Yes — cleated ply panel</option><option value="0">No — open top</option></select></div>
+    <div class="row"><label>Ply sheet (w×l)</label><input type="number" id="sheetW" value="48" step="1" min="24" max="60" style="width:58px;padding:4px 3px"><input type="number" id="sheetL" value="96" step="1" min="48" max="144" style="width:58px;padding:4px 3px"><span class="unit">in</span></div>
+    <div class="row"><label>Saw cut (kerf)</label><input type="number" id="kerf" value="0.125" step="0.0625" min="0" max="0.5"><span class="unit">in</span></div>
+    <button class="hbtn" id="btnPresetBox" style="width:100%;margin-top:4px">★ PRESET: EXPORT CRATE 48×40×30 · 3/8″ PLY</button>
+    <div class="hint">ASTM D6251-style cleated panel walls: a 1×4 cleat frame (rails and edge cleats, plus intermediate cleats no farther apart than the max cleat spacing), plywood sheathing. Edge cleats interior keep the crate flush to the pallet footprint; exterior lap the side-to-end corner joint (stronger corner, more interior room) but stand one cleat thickness proud of the base on each face. Skirted: panels drop over the base edge and are nailed horizontally into it (fasteners in shear — standard for export). Side and end laps are set apart: keep the end lap at the deck so the forks fit between the stringers, and stop the side lap above the notches for side entry. On-deck: bottom rail lag-screwed down into stringers (detachable, weaker). Plywood is ISPM-15 exempt, and so are cleats ripped from it; the lumber base and lumber cleats need the HT stamp. Plywood sheets are counted by laying every part on the sheet with the saw cut between parts; cleat strips run along the face grain (sheet length).</div>
+  </div>
+
+  <div class="sec" id="secBlock" style="display:none"><h2>BLOCKS + STRINGER BOARDS</h2>
+    <div class="row"><label>Blocks along length</label><input type="number" id="kNL" value="3" step="1" min="2" max="8"><span class="unit"></span></div>
+    <div class="row"><label>Blocks along width</label><input type="number" id="kNW" value="3" step="1" min="2" max="8"><span class="unit"></span></div>
+    <div class="row"><label>Block size (square)</label><input type="number" id="kSize" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Block height</label><input type="number" id="kHgt" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Stringer boards</label><select id="kSBon">
+      <option value="1" selected>Yes — on blocks</option>
+      <option value="0">No — deck on blocks</option>
+    </select></div>
+    <div class="row"><label>Str. board thickness</label><input type="number" id="kSBt" value="0.75" step="0.0625" min="0.5" max="1.5"><span class="unit">in</span></div>
+    <div class="row"><label>Str. board width</label><input type="number" id="kSBw" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
+    <div class="hint">One stringer board runs lengthwise on each row of blocks, under the top deck, so their count follows "blocks along width". One bottom deckboard sits under each block column, so the BOTTOM DECK count follows "blocks along length". Every block lands on a board.</div>
+  </div>
+
+  <div class="sec"><h2>MATERIAL</h2>
+    <div class="row"><label>Species</label><select id="species"></select></div>
+    <div class="row"><label>Bending Fb</label><input type="number" id="Fb" value="850" step="25" min="100" max="5000"><span class="unit">psi</span></div>
+    <div class="row"><label>Stiffness E</label><input type="number" id="E" value="1100000" step="50000" min="100000" max="4000000"><span class="unit">psi</span></div>
+    <div class="row"><label>Compression Fc∥</label><input type="number" id="Fc" value="1310" step="25" min="100" max="5000"><span class="unit">psi</span></div>
+    <div class="hint">Dry lumber only (MC ≤ 19%) — no wet-service reduction applied. Defaults ≈ No.2 design values; Fb/E stay editable per lot.</div>
+  </div>
+
+  <div class="sec"><h2>ANALYSIS SETTINGS</h2>
+    <div class="row"><label>Safety factor (strength)</label><input type="number" id="SF" value="1.5" step="0.1" min="1" max="4"><span class="unit"></span></div>
+    <div class="row"><label>Deflection limit</label><input type="number" id="defPct" value="1.0" step="0.1" min="0.2" max="3"><span class="unit">%span</span></div>
+    <div class="row"><label>Rack bearing / side</label><input type="number" id="bearing" value="2" step="0.5" min="0.5" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Fork spacing (c-c)</label><input type="number" id="forkSp" value="24" step="1" min="12" max="40"><span class="unit">in</span></div>
+  </div>
+</div>
+
+<!-- ============ CENTER : 3D VIEW ============ -->
+<div id="viewport">
+  <div id="cvWrap">
+    <canvas id="cv"></canvas>
+    <div id="vpTag">ORTHOGRAPHIC SPEC — TOP · SIDE · END · DIMS IN INCHES</div>
+    <div id="toast"></div>
+  </div>
+  <div id="vpFoot">
+    <div id="vpDims"></div>
+    <div id="warn"></div>
+  </div>
+</div>
+
+<!-- ============ RIGHT : RESULTS ============ -->
+<div class="col">
+  <div class="sec"><h2>RATED CAPACITY — ESTIMATES</h2>
+    <div id="cards"></div>
+  </div>
+
+  <div class="sec"><h2 id="detTitle">PALLET DETAILS</h2>
+    <table class="det" id="det"></table>
+  </div>
+
+  <div class="sec"><h2>BILL OF MATERIALS</h2>
+    <table class="bom" id="bom"></table>
+  </div>
+
+  <div class="sec"><h2 id="cutTitle">CUT LIST</h2>
+    <div id="cutList"></div>
+  </div>
+
+  <div class="disc">ESTIMATES ONLY — simplified beam theory on uniform load, simply-supported spans. Not equivalent to PDS® certified analysis; not for contractual load certification. Verify critical designs by test or licensed engineer.</div>
+</div>
+</div>
+</div>
+
+<!-- printable spec sheet -->
+<div id="spec" class="doc"></div>
+<div id="cutSheet" class="doc"></div>
+
+<script>
+"use strict";
+/*@build:js*/
+</script>
+</body>
+</html>

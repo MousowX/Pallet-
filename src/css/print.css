@@ -1,0 +1,31 @@
+/* ---------- print spec sheet ---------- */
+#spec,#cutSheet{display:none}
+@media print{
+  @page{size:auto;margin:0}          /* no margin = browser prints no URL/filename header or footer */
+  html,body{background:#fff !important;height:auto;overflow:visible}   /* white paper even with "background graphics" on */
+  #app{display:none}
+  #spec{display:block}
+  body.printCut #spec{display:none}                  /* the CUT LIST button prints the cut list instead */
+  body.printCut #cutSheet{display:block}
+  .doc{font-family:Georgia,serif;color:#111;font-size:12px;padding:11mm 14mm;
+        -webkit-box-decoration-break:clone;box-decoration-break:clone}   /* same margin on every printed page */
+  .doc h1{font-family:Arial,sans-serif;font-size:18px;letter-spacing:.12em;border-bottom:3px solid #111;padding-bottom:6px;margin-bottom:2px}
+  .doc .meta{color:#666;font-size:10px;margin-bottom:8px}
+  .doc h2{font-family:Arial,sans-serif;font-size:12px;letter-spacing:.1em;margin:10px 0 4px}
+  .doc table{width:100%;border-collapse:collapse;font-size:11px}
+  .doc td,.doc th{border:1px solid #999;padding:2px 7px;text-align:left}
+  .doc th{background:#eee;font-family:Arial,sans-serif;font-size:10px}
+  .doc tr{break-inside:avoid}
+  .doc .note{font-size:9px;color:#555;margin-top:6px;line-height:1.45}
+  .doc td.g{width:17%;font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:.06em;vertical-align:top;padding-top:3px}
+  .doc td.gv{font-size:9.5px;line-height:1.35}
+  .doc .bad{color:#b3261e;font-weight:700}
+  .doc .keep{break-inside:avoid}      /* a heading never prints alone at the foot of a page */
+  .doc img{display:block}
+  .doc h3{font-family:Arial,sans-serif;font-size:10.5px;letter-spacing:.06em;margin:8px 0 4px}
+  .doc .sheets{gap:12px}
+  .doc .sheets figure{width:132px;break-inside:avoid}
+  .doc .sheets figcaption{color:#333;font-size:9px}
+  .doc .sheets figcaption b{color:#111}
+  .doc .cutNote{color:#444;font-size:9.5px}
+}
