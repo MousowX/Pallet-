@@ -16,8 +16,11 @@ function flushSpec(){
   if(specLast){ specDay=day; buildSpec(...specLast); }
 }
 window.addEventListener("beforeprint", flushSpec);
+// the design as last shown: a resize redraws it instead of working the whole design out again
+let lastModel=null;
 function update(msg){
   const m=buildModel();
+  lastModel=m;
   const a=analyze(m);
   const gov=renderResults(m,a);
   renderDetails(m.det);
@@ -40,10 +43,10 @@ function update(msg){
     else over.forEach(([w,n,h])=>warn.push(`horizontal cleats: ${n}×${m.p.cw}″ exceeds the ${h.toFixed(1)}″ ${w} panel`));
     if(m.p.iL<=0||m.p.iW<=0) warn.push("interior clear is zero or negative");
   }
-  $("warn").innerHTML = warn.map(w=>"⚠ "+w).join("<br>");
-  $("vpDims").innerHTML =
+  setHTML("warn", warn.map(w=>"⚠ "+w).join("<br>"));
+  setHTML("vpDims",
     `<b>${m.L}″ × ${m.W}″ × ${m.H.toFixed(2)}″</b> · ${m.totBF.toFixed(1)} BF · ${m.weight.toFixed(0)} lb tare${extra}<br>`+
-    `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`;
+    `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`);
   drawScreen(m);               // last: the footer text above sets how much height the drawing gets
   if(msg) toast(msg);
 }

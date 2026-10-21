@@ -52,7 +52,7 @@ function renderCut(m){
   });
   spliceNotes(c).forEach(t=>{ h+=`<div class="cutNote">⚠ ${t}</div>`; });
   h+=`<div class="cutNote">Nails ≈ <b>${(m.nails*n).toLocaleString()}</b>${m.lags?` · lag screws <b>${(m.lags*n).toLocaleString()}</b>`:""}${c.ply.length?" · hover a sheet for its parts":""}</div>`;
-  $("cutList").innerHTML=h;
+  setHTML("cutList",h);
 }
 // printable cut list — for the shop, or for whoever supplies the wood
 function buildCutSheet(m){

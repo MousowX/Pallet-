@@ -44,8 +44,11 @@ header .sp{flex:1}
 .btnRow button:hover{border-color:var(--accent);color:var(--accent)}
 .btnRow button.dim{color:var(--faint)}
 .btnRow button.dim:hover{border-color:var(--bad);color:var(--bad)}
-#libSel{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+#libSel,#libFind{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
   font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px}
+#libFind{margin-bottom:5px}
+#libFind:focus{outline:none;border-color:var(--accent)}
+#libFind::placeholder{color:var(--faint)}
 
 /* ---------- viewport ---------- */
 /* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */

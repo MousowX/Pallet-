@@ -1,8 +1,9 @@
 /* ================= SAVE / LOAD DESIGNS ================= */
 const FMT="pallet-lab/1";
 // every labelled control in the input columns — collected live so nothing is ever missed
+// (the DESIGNS section — list, search box, file pickers — isn't part of a design)
 const ctrls = () => Array.from(document.querySelectorAll('#main input[id], #main select[id]'))
-                         .filter(el=>el.type!=="file" && el.id!=="libSel");   // the library picker isn't part of a design
+                         .filter(el=>el.type!=="file" && !el.closest("#secLib"));
 
 function collectState(){
   const f={};
@@ -38,12 +39,17 @@ const MIGRATE={
   nDep:   f=>"nLen" in f ? undefined : String(Math.ceil(Math.min(1.5, 0.4*oldNum(f.sHgt,2,6))*8-1e-9)/8),
 };
 const TYPES={stringer:"tStr",block:"tBlk",box:"tBox"};
-function applyState(st,msg){
-  // everything is checked before the screen is touched, so a bad file leaves the current design as it was
+// a design file the tool can open, or an error saying why not; gives its pallet type
+function checkDesign(st){
   if(!st||typeof st!=="object"||st.fmt!==FMT||!st.f||typeof st.f!=="object"||Array.isArray(st.f))
     throw new Error("not a PALLET\u00b7LAB design file");
   const type = st.type==null ? "stringer" : st.type;
   if(!Object.prototype.hasOwnProperty.call(TYPES,type)) throw new Error("unknown pallet type in the file");
+  return type;
+}
+function applyState(st,msg){
+  // everything is checked before the screen is touched, so a bad file leaves the current design as it was
+  const type=checkDesign(st);
   const byId={}; ctrls().forEach(el=>byId[el.id]=el);
   const has=id=>Object.prototype.hasOwnProperty.call(st.f,id);
   // a value a control can actually take: text or a number, and for a list one of its choices

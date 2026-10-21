@@ -3,8 +3,9 @@
   "private": true,
   "description": "Automatic checks for ../pallet-lab.html",
   "scripts": {
-    "test": "node sweep.js 1000 && node sweep_edge.js 1000 && node nest.js 300 && node oldfiles.js",
-    "test:quick": "node sweep.js 200 && node sweep_edge.js 200 && node nest.js 60 && node oldfiles.js",
+    "build": "node ../build.js",
+    "test": "node ../build.js --check && node sweep.js 1000 && node sweep_edge.js 1000 && node nest.js 300 && node oldfiles.js && node library.js",
+    "test:quick": "node ../build.js --check && node sweep.js 200 && node sweep_edge.js 200 && node nest.js 60 && node oldfiles.js && node library.js",
     "compare": "node compare_versions.js 600"
   },
   "devDependencies": {

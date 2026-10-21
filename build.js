@@ -28,6 +28,7 @@ const JS=[
   "app/update.js",             // update(): runs on every change
   "app/events.js",             // buttons, presets, printing
   "designs/format.js",         // design files: collectState, applyState, RETIRED, MIGRATE
+  "designs/db.js",             // the design database (IndexedDB; the older localStorage list where it is missing)
   "designs/files.js",          // save, load and import design files
   "designs/library.js",        // the design list: search, save, load, delete
   "app/boot.js",               // resize, Ctrl+P, first draw

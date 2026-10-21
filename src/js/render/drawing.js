@@ -346,11 +346,16 @@ function drawSpec2D(c2,w,h,m,pal,inset=0){   // inset: room kept clear at the to
   }
 }
 
+// The canvas memory is set up again only when the drawing area changes size (setting its width or
+// height always reallocates and clears it). Each drawing still starts from the same clean state: it is
+// wrapped in save/restore, and drawSpec2D clears the whole area first.
+let cvSize="";
 function drawScreen(m){
-  const w=cv.clientWidth, h=cv.clientHeight;
-  cv.width=w*devicePixelRatio; cv.height=h*devicePixelRatio;
+  const w=cv.clientWidth, h=cv.clientHeight, size=w+"x"+h+"@"+devicePixelRatio;
+  if(size!==cvSize){ cvSize=size; cv.width=w*devicePixelRatio; cv.height=h*devicePixelRatio; }
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-  drawSpec2D(ctx,w,h,m,PAL_SCREEN,18);
+  ctx.save();
+  try{ drawSpec2D(ctx,w,h,m,PAL_SCREEN,18); }finally{ ctx.restore(); }
 }
 
 function printDrawingPNG(m){

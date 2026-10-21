@@ -1,5 +1,9 @@
 /* ================= STATE ================= */
 const $ = id => document.getElementById(id);
+// a results panel is rewritten only when what it shows has changed: a keystroke that leaves it as it was
+// (a client name, a value that only changes the cut list) costs that panel no rebuild and no re-layout
+const shownHTML = {};
+function setHTML(id,h){ if(shownHTML[id]!==h){ shownHTML[id]=h; $(id).innerHTML=h; } }
 let palletType = "stringer";
 const cv = $("cv"), ctx = cv.getContext("2d");
 

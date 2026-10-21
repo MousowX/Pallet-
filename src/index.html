@@ -26,7 +26,8 @@
 <div id="main">
 <!-- ============ LEFT : DESIGN INPUTS ============ -->
 <div class="col">
-  <div class="sec"><h2>DESIGNS</h2>
+  <div class="sec" id="secLib"><h2>DESIGNS</h2>
+    <input type="search" id="libFind" placeholder="search saved designs" autocomplete="off" spellcheck="false">
     <select id="libSel"><option value="">— saved in this browser —</option></select>
     <div class="btnRow">
       <button id="btnLibSave">SAVE HERE</button>
@@ -36,8 +37,12 @@
       <button id="btnFileSave">⭳ SAVE FILE</button>
       <button id="btnFileLoad">⭱ LOAD FILE</button>
     </div>
+    <div class="btnRow">
+      <button id="btnImport" title="Add many design files to the list at once — the design on screen stays as it is">⭱ IMPORT FILES TO THE LIST</button>
+    </div>
     <input type="file" id="fileIn" accept=".json,application/json" style="display:none">
-    <div class="hint" id="libHint">A design file (.json) keeps every input — send it with the drawing or archive it per part number. Loading one restores the whole design.</div>
+    <input type="file" id="importIn" accept=".json,application/json" multiple style="display:none">
+    <div class="hint" id="libHint">Every design saved or loaded, here or as a file, goes into this list — search it by name, client or part #. A design file (.json) keeps every input: send it with the drawing or archive it per part number.</div>
   </div>
 
   <div class="sec"><h2>IDENTIFICATION</h2>
