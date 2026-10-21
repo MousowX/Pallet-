@@ -29,7 +29,7 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 - **Language:** the interface is in English. Keep the Spanish shop terms already used (tablas, triplay, seco).
 - **Capacity math:** never change it silently. Say what changed and show before and after numbers for the GMA 48×40 (the RESET button) and the export crate preset.
 - **Printing:** a pallet spec sheet must fit on one Letter page.
-- **Website:** the site publishes the committed `pallet-lab.html` only (`node build.js --site` refuses an out-of-date file). It updates on every merge to `main`. Its design list is the site's own: browser storage belongs to each address, so designs saved in the double-clicked file are not on the site. `python tests/browser/flows.py <site URL>` checks a published site.
+- **Website:** the site publishes the committed `pallet-lab.html` only (`node build.js --site` refuses an out-of-date file). It updates on every merge to `main`. Its browser list is the site's own (browser storage belongs to each address, so designs saved in the double-clicked file's browser list are not on the site); the shared list (Supabase) is the same from both. `python tests/browser/flows.py <site URL>` checks a published site.
 
 ## Saved designs: keep old files working
 - A design file is JSON: `{fmt:"pallet-lab/1", type, saved, f:{<input id>: value}}`. Every `input` and `select` with an id in `#main` is saved automatically (`collectState`), except the DESIGNS section (`#secLib`: the list, the search box and the file pickers).
@@ -77,13 +77,14 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 | `designs/format.js` | design files: `collectState`, `checkDesign`, `applyState`, `RETIRED`, `MIGRATE` |
 | `designs/db.js`, `designs/library.js`, `designs/files.js` | the design database, the list (search, save, load, delete), design files and import |
 | `designs/cloud-config.js`, `designs/cloud.js` | the shared list in Supabase (pilot): setting, sign-in, the same calls over REST |
+| `app/fold.js` | panels that open and close from their title (`data-fold`), one-line summaries of closed input panels, notes (`.hint`) behind "?"; remembered in localStorage `palletlab.ui.folds`. Screen only: never part of a design or a printout |
 | `app/boot.js` | resize, Ctrl+P, the first `update()` |
 
 ## Before calling a change done
 1. Run `node build.js`. Then `cd tests && npm install` the first time, then `npm test`. Every script must end with `failed checks: 0`.
 2. Run `npm run compare`. For a restructure it must show no differences. For a real change it must show only the intended ones: list them for Isaac.
 3. Browser checks, when Python and Playwright are available, from `tests/browser/`:
-   - `flows.py`: the design list and its database, design files, importing, search, switching types, printing;
+   - `flows.py`: the design list and its database, design files, importing, search, switching types, printing, folding panels;
    - `printfit.py`: a pallet spec sheet fits one page;
    - `labels.py`: no labels on top of each other in the drawings;
    - `inputs_fit.py`: every input shows its whole value;

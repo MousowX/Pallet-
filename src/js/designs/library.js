@@ -30,6 +30,7 @@ function libOff(){
   libOK=false; libRows=[];
   ["libSel","libFind","btnLibSave","btnLibDel","btnImport"].forEach(id=>{ $(id).disabled=true; });
   $("libHint").textContent="This browser is blocking local storage, so the in-browser list is off. Design files (.json) still work normally.";
+  $("libHint").classList.add("alert");      // shown even while the notes are hidden
 }
 // the rows that match the search box: every word, in any of name, client, part #, type or date
 function libMatches(){

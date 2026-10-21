@@ -35,6 +35,7 @@ const JS=[
   "designs/cloud.js",          // the shared list: sign-in and the same calls over Supabase's REST API
   "designs/files.js",          // save, load and import design files
   "designs/library.js",        // the design list: search, save, load, delete
+  "app/fold.js",               // panels that open and close, with one-line summaries (screen only)
   "app/boot.js",               // resize, Ctrl+P, first draw
 ];
 

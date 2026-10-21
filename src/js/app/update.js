@@ -47,6 +47,7 @@ function update(msg){
   setHTML("vpDims",
     `<b>${m.L}″ × ${m.W}″ × ${m.H.toFixed(2)}″</b> · ${m.totBF.toFixed(1)} BF · ${m.weight.toFixed(0)} lb tare${extra}<br>`+
     `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`);
+  foldSummaries(m);            // the one-line summaries of closed sections
   drawScreen(m);               // last: the footer text above sets how much height the drawing gets
   if(msg) toast(msg);
 }

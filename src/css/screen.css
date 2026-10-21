@@ -55,6 +55,25 @@ header .sp{flex:1}
 .cloudWho{color:var(--accent);font-size:10.5px;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #secLib.shared #libSel{border-color:var(--accent)}
 
+/* ---------- folding panels (app/fold.js) ---------- */
+.foldable > h2{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;white-space:nowrap}
+.foldable > h2::before{content:"";flex:none;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:5px solid currentColor;transition:transform .15s}
+.foldable.collapsed > h2::before{transform:rotate(-90deg)}
+.foldable > h2:hover,.foldable > h2:focus-visible{color:var(--dim);outline:none}
+.foldable.collapsed{padding-bottom:10px}
+.foldable.collapsed > h2{margin-bottom:0}
+.foldable.collapsed > :not(h2){display:none !important}
+.foldSum{display:none;flex:1 1 auto;margin-left:auto;min-width:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:0;color:var(--dim)}
+.foldable.collapsed .foldSum{display:block}
+.helpBtn{margin-left:auto;flex:none;width:15px;height:15px;border-radius:50%;border:1px solid var(--line);background:none;
+  color:var(--faint);font-family:var(--mono);font-size:9px;line-height:13px;padding:0;cursor:pointer;letter-spacing:0}
+.helpBtn:hover,.foldable.helpOn .helpBtn{border-color:var(--accent);color:var(--accent)}
+.foldable.collapsed .helpBtn{display:none}
+.foldable .hint{display:none}
+.foldable.helpOn .hint{display:block}
+#libHint.alert{display:block !important;color:var(--bad)}
+
 /* ---------- viewport ---------- */
 /* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */
 #viewport{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
