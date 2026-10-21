@@ -1,8 +1,17 @@
 # PALLET·LAB — changelog
 
-Newest first. The numbers match the files in `../history`. The working file `../pallet-lab.html` is version 10.
+Newest first. The numbers match the files in `../history`. The working file `../pallet-lab.html` is version 11.
 
-## 10 · 2026-10-17 — master (working file)
+## 11 · 2026-10-20 — restructure and design database (working file)
+Version 10 with its code reorganized and a database for saved designs. Every result is the same as version 10: capacities, bill of materials, details, warnings, cut list, both printouts, saved files and the drawings (600 designs and 120 drawings compared, no differences).
+- The code lives in `src/`, one file per part (calculations, drawing, printouts, designs). `node build.js` joins it into the one self-contained `pallet-lab.html`, which still opens with a double-click, offline.
+- DESIGNS list: every design is kept in one database in the browser (IndexedDB): SAVE HERE, every SAVE FILE and LOAD FILE (under the file's name), and the new IMPORT FILES TO THE LIST for many files at once. A design saved under a name already in the list replaces it and keeps its place.
+- A search box over the list: name, client, part #, type or date; every word must match; accents and capitals don't matter.
+- Designs saved in the browser by earlier versions move into the database the first time this version opens; the old list is kept as a backup in the browser. Earlier versions then show an empty in-browser list.
+- Where the browser refuses the database, the older in-browser list is used as before. Blocked or full storage is reported as before.
+- Lighter on the computer: a panel is rewritten only when it changes, the drawing area isn't reallocated on every keystroke, and a window resize redraws without working the design out again.
+
+## 10 · 2026-10-17 — master
 Version 7, plus the error fixes of Oct 16–17. It has **no version stamp**: Isaac asked to go back to the version before step 3.
 - A damaged in-browser design list no longer leaves the tool as a blank page; bad entries are skipped.
 - A bad or foreign design file is refused before anything changes. Values a field can't take go back to their default, and a message says how many.

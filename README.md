@@ -10,7 +10,7 @@ Todo lo de PALLET·LAB en una carpeta, listo para abrir en Claude Code.
 | `build.js` | Junta `src/` en el único `pallet-lab.html`. |
 | `CLAUDE.md` | Las reglas que Claude Code lee solo: un solo archivo HTML, sin precios, solo White Fir y Pino Mexicano, los diseños guardados siempre deben abrir, y cada cambio en una rama que tú apruebas. |
 | `docs/` | Historial de cambios (`CHANGELOG.md`), la nota de la decisión de usar solo PALLET·LAB y tu checklist en Excel. |
-| `history/` | Todas las versiones anteriores, numeradas del 01 al 10. La 10 es la versión aprobada contra la que se comparan los cambios. |
+| `history/` | Todas las versiones anteriores, numeradas del 01 al 11. La 11 es la versión aprobada contra la que se comparan los cambios. |
 | `tests/` | Pruebas automáticas, incluidos 18 diseños guardados con versiones anteriores. |
 
 ## Para empezar en Claude Code
@@ -32,7 +32,7 @@ La sección DESIGNS guarda todos tus diseños en una base de datos dentro del na
 ## Para reestructurar
 Pide un plan antes de mover nada, por ejemplo:
 
-> Propón cómo reestructurar este proyecto sin cambiar ningún resultado. Trabaja en una rama. Al terminar, `npm test`, `npm run compare` y `tests/browser/compare_drawings.py` deben salir sin diferencias contra `history/10_2026-10-17_master.html`.
+> Propón cómo reestructurar este proyecto sin cambiar ningún resultado. Trabaja en una rama. Al terminar, `npm test`, `npm run compare` y `tests/browser/compare_drawings.py` deben salir sin diferencias contra la versión aprobada más nueva de `history/`.
 
 - `npm run compare` corre 600 diseños en la versión aprobada y en la nueva. Compara capacidades, lista de materiales, detalles, advertencias, lista de corte, hojas impresas y archivos guardados.
 - `compare_drawings.py` compara los dibujos píxel por píxel.
@@ -53,7 +53,7 @@ En Windows, el comando de Python suele ser `python` o `py` en lugar de `python3`
 
 ## Respaldo
 - Copia congelada en tu proyecto Cobaza Madera de Claude: `pallet-lab/pallet-lab-backup-2026-10-17.html`.
-- `history/10_2026-10-17_master.html` en esta carpeta.
+- `history/11_2026-10-20_master.html` en esta carpeta (la versión aprobada actual) y todas las anteriores.
 
 ## Pendientes conocidos
 - La capacidad con montacargas (FORK SUPPORT) no toma en cuenta las muescas, así que sale alta cuando las horquillas entran por ellas. Es la primera mejora de la checklist.

@@ -13,7 +13,8 @@ Every version, numbered oldest first. What each one changed is in `../docs/CHANG
 | `07_2026-10-16_notches-set-by-space.html` | Notches set by the space between them |
 | `08_2026-10-16_version-stamp_REVERTED.html` | Version stamp; Isaac went back to 07 |
 | `09_2026-10-16_fixes-with-stamp_SUPERSEDED.html` | Error fixes with the stamp; replaced by 10 |
-| `10_2026-10-17_master.html` | **Approved master**: 07 + error fixes, no stamp. Same as `../pallet-lab.html` on 2026-10-17 |
+| `10_2026-10-17_master.html` | Approved master of Oct 17: 07 + error fixes, no stamp |
+| `11_2026-10-20_master.html` | **Approved master**: 10 with the code in `src/` and the design database; same results as 10. Same as `../pallet-lab.html` on 2026-10-20 |
 
 ## How the tests use this folder
 - `tests/compare_versions.js` and `tests/browser/compare_drawings.py` compare the working file with the **newest approved version** here: the highest number that isn't marked REVERTED or SUPERSEDED.
