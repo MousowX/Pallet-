@@ -29,6 +29,31 @@ La sección DESIGNS guarda todos tus diseños en una base de datos dentro del na
 - La base vive en este navegador y esta computadora. Si borras los datos del navegador, se borra también, así que los archivos `.json` siguen siendo tu respaldo.
 - Si el navegador no permite la base de datos, la herramienta usa la lista vieja como antes. Si bloquea todo el almacenamiento, la lista se apaga y los archivos siguen funcionando.
 
+## Lista compartida (Supabase) — piloto
+Con la lista compartida, todas las computadoras ven los mismos diseños. Se guardan en una base de datos de Supabase, en su plan gratis. Mientras no esté configurada, la herramienta no muestra nada nuevo.
+
+**Prepararla (una sola vez):**
+1. En supabase.com crea una cuenta y un proyecto en el plan **Free**. La contraseña de la base de datos que te pide es solo para ti: no se la des a nadie ni la pongas en la herramienta.
+2. Entra a **SQL Editor** → **New query**. Pega todo `supabase/schema.sql` y, al final, escribe en minúsculas los correos de las personas que la van a usar. Haz clic en **Run**.
+3. En **Authentication**:
+   - apaga el registro abierto ("Allow new users to sign up");
+   - en **Users** → **Add user**, crea a cada persona con su correo y una contraseña, y marca que quede confirmada.
+4. En la configuración del proyecto (**API Keys** o **Data API**), copia el **Project URL** y la llave **publishable** (también llamada **anon public**). Esas dos son públicas. La **secret** o **service_role** nunca va en la herramienta.
+5. Ponlas en `src/js/designs/cloud-config.js` y corre `node build.js`, o pásamelas a mí.
+
+**Usarla:**
+- Arriba de DESIGNS: correo, contraseña y **SIGN IN TO THE SHARED LIST**. Mientras tengas sesión, todo lo que guardas, importas o abres entra a la lista compartida, y la búsqueda funciona igual que siempre.
+- **⭱ COPY BROWSER LIST** sube los diseños que tenías guardados en ese navegador.
+- Si un diseño con ese nombre lo guardó otra persona, la herramienta te pregunta antes de reemplazarlo. Para borrar, te avisa que se borra para todos.
+- **SIGN OUT** te regresa a la lista del navegador. Sin internet, la herramienta lo avisa y sigue funcionando con la lista del navegador.
+
+**Para decidir si vale la pena invertir:** en Supabase, **Table Editor** → `designs` muestra cada diseño, quién lo guardó (`updated_by`) y cuándo (`updated_at`).
+
+**Límites del plan gratis:**
+- 500 MB, que alcanzan para cientos de miles de diseños.
+- Si nadie lo usa en una semana, el proyecto se pausa. Se reactiva desde el panel de Supabase.
+- No incluye respaldos automáticos, así que guarda también tus archivos `.json`.
+
 ## Publicar en internet (Render o Vercel)
 La herramienta también puede vivir en una página web. Se publica solo `pallet-lab.html` (como página principal); `history/`, `tests/` y `docs/` no se publican. Cada vez que algo entra a `main`, la página se actualiza sola.
 
@@ -58,6 +83,7 @@ Pide un plan antes de mover nada, por ejemplo:
 | `tests/browser/labels.py` | que no haya etiquetas encimadas o cortadas en los dibujos | Python y Playwright |
 | `tests/browser/inputs_fit.py` | que cada campo muestre su valor completo | Python y Playwright |
 | `tests/browser/compare_drawings.py` | que los dibujos sean iguales a los de la versión aprobada | Python y Playwright |
+| `tests/browser/cloud.py` | la lista compartida contra un Supabase de prueba local: entrar, guardar, abrir, borrar, importar, otra computadora, sesión que vence, sin internet, salir | Python y Playwright |
 
 En Windows, el comando de Python suele ser `python` o `py` en lugar de `python3`; Claude Code lo ajusta solo.
 

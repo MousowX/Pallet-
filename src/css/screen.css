@@ -44,11 +44,16 @@ header .sp{flex:1}
 .btnRow button:hover{border-color:var(--accent);color:var(--accent)}
 .btnRow button.dim{color:var(--faint)}
 .btnRow button.dim:hover{border-color:var(--bad);color:var(--bad)}
-#libSel,#libFind{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+#libSel,#libFind,#cloudEmail,#cloudPass{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
   font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px}
-#libFind{margin-bottom:5px}
-#libFind:focus{outline:none;border-color:var(--accent)}
-#libFind::placeholder{color:var(--faint)}
+#libFind,#cloudEmail,#cloudPass{margin-bottom:5px}
+#libFind:focus,#cloudEmail:focus,#cloudPass:focus{outline:none;border-color:var(--accent)}
+#libFind::placeholder,#cloudEmail::placeholder,#cloudPass::placeholder{color:var(--faint)}
+#cloudBox{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+#cloudBox .btnRow{margin-top:0}
+#btnCloudCopy{flex:2}
+.cloudWho{color:var(--accent);font-size:10.5px;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#secLib.shared #libSel{border-color:var(--accent)}
 
 /* ---------- viewport ---------- */
 /* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */

@@ -12,6 +12,7 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 | `src/css/` | `screen.css` (the page), `print.css` (spec sheet and cut list on paper) |
 | `src/js/` | the code, one file per part (table below); `build.js` lists them in the order they run |
 | `build.js` | joins `src/` into `pallet-lab.html`; `node build.js --check` fails if the file is out of date |
+| `supabase/schema.sql` | the shared list's tables and rules, run once in the Supabase SQL editor |
 | `vercel.json`, `render.yaml` | the website: both publish only the tool, made by `node build.js --site` as `dist/index.html` (ignored by git) |
 | `history/` | every earlier version, numbered; the newest approved one is the baseline for comparisons (see `history/README.md`) |
 | `tests/` | automatic checks (below), old saved designs in `tests/fixtures/old-saves` |
@@ -44,6 +45,12 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 - Changing the stores: raise `DB_VERSION` and add an `onupgradeneeded` step that keeps every design. An older copy of the tool can't open a newer database and falls back to the localStorage list.
 - List work runs in order through `libRun`; `libIdle()` resolves when it has settled (the browser checks wait on it).
 
+## The shared list (Supabase, pilot)
+- `src/js/designs/cloud-config.js` holds the project URL and publishable key; both empty means no shared list (the controls stay hidden). `src/js/designs/cloud.js` gives the list the same calls as `db.js` over Supabase's REST API with plain `fetch` (no library) and handles sign-in (email + password; the session in localStorage `palletlab.cloud.session`, renewed when it runs out).
+- `supabase/schema.sql` is the whole server side: the `designs` table, the `members` allowlist, the row-level security rules, and `save_design` / `save_designs` / `is_member`. The publishable key is public; only those rules guard the data. Never put a secret or service_role key in the tool.
+- Signed in, the list is the shared one (`designDB.kind==="cloud"`); signed out, offline at start, or when the session can't be renewed, it is this browser's (`libLocal`). It looks again when the page comes back into view and once a minute while it is in view, only while signed in.
+- `tests/browser/cloud.py` checks it against a stand-in for Supabase that runs locally; it can't check the SQL itself, so a change to `schema.sql` must be tried on the real project.
+
 ## Restructuring or refactoring
 - A restructure must not change any result. Two checks prove it against the baseline in `history/`:
   - `cd tests && npm run compare`: capacities, bill of materials, details, warnings, cut list, both printouts and saved files, over 600 designs.
@@ -69,6 +76,7 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 | `app/update.js`, `app/events.js` | `update()` runs on every change; buttons, presets, printing |
 | `designs/format.js` | design files: `collectState`, `checkDesign`, `applyState`, `RETIRED`, `MIGRATE` |
 | `designs/db.js`, `designs/library.js`, `designs/files.js` | the design database, the list (search, save, load, delete), design files and import |
+| `designs/cloud-config.js`, `designs/cloud.js` | the shared list in Supabase (pilot): setting, sign-in, the same calls over REST |
 | `app/boot.js` | resize, Ctrl+P, the first `update()` |
 
 ## Before calling a change done
@@ -79,7 +87,8 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
    - `printfit.py`: a pallet spec sheet fits one page;
    - `labels.py`: no labels on top of each other in the drawings;
    - `inputs_fit.py`: every input shows its whole value;
-   - `compare_drawings.py`: the drawings match the baseline.
+   - `compare_drawings.py`: the drawings match the baseline;
+   - `cloud.py`: the shared list, against a local stand-in for Supabase.
 4. Open `pallet-lab.html` in a browser. Look at the changed area on screen and in print preview, for both the spec sheet and the CUT LIST.
 5. Tell Isaac in plain words what changed. Include before and after numbers whenever capacity, the bill of materials or the cut list change.
 
