@@ -51,11 +51,16 @@ header .sp{flex:1}
 .btnRow button:hover{border-color:var(--accent);color:var(--accent)}
 .btnRow button.dim{color:var(--faint)}
 .btnRow button.dim:hover{border-color:var(--bad);color:var(--bad)}
-#libSel,#libFind{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+#libSel,#libFind,#cloudEmail,#cloudPass{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
   font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px}
-#libFind{margin-bottom:5px}
-#libFind:focus{outline:none;border-color:var(--accent)}
-#libFind::placeholder{color:var(--faint)}
+#libFind,#cloudEmail,#cloudPass{margin-bottom:5px}
+#libFind:focus,#cloudEmail:focus,#cloudPass:focus{outline:none;border-color:var(--accent)}
+#libFind::placeholder,#cloudEmail::placeholder,#cloudPass::placeholder{color:var(--faint)}
+#cloudBox{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+#cloudBox .btnRow{margin-top:0}
+#btnCloudCopy{flex:2}
+.cloudWho{color:var(--accent);font-size:10.5px;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#secLib.shared #libSel{border-color:var(--accent)}
 
 /* ---------- viewport ---------- */
 /* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */
@@ -165,6 +170,20 @@ table.det td.bad{color:var(--bad)}
 <!-- ============ LEFT : DESIGN INPUTS ============ -->
 <div class="col">
   <div class="sec" id="secLib"><h2>DESIGNS</h2>
+    <div id="cloudBox" style="display:none">
+      <div id="cloudSignedOut">
+        <input type="email" id="cloudEmail" placeholder="email — shared list" autocomplete="username" spellcheck="false">
+        <input type="password" id="cloudPass" placeholder="password" autocomplete="current-password">
+        <div class="btnRow"><button id="btnCloudIn">SIGN IN TO THE SHARED LIST</button></div>
+      </div>
+      <div id="cloudSignedIn" style="display:none">
+        <div class="cloudWho">● SHARED LIST · <span id="cloudUser"></span></div>
+        <div class="btnRow">
+          <button id="btnCloudCopy" title="Copy every design saved in this browser to the shared list">⭱ COPY BROWSER LIST</button>
+          <button id="btnCloudOut" class="dim">SIGN OUT</button>
+        </div>
+      </div>
+    </div>
     <input type="search" id="libFind" placeholder="search saved designs" autocomplete="off" spellcheck="false">
     <select id="libSel"><option value="">— saved in this browser —</option></select>
     <div class="btnRow">
@@ -2035,6 +2054,200 @@ async function designDBOpen(){
   localBackend.read();
   return localBackend;
 }
+/* ================= SHARED DESIGN LIST (Supabase) — pilot ================= */
+// The Supabase project that holds the shared list: its URL and its publishable (anon) key. Both are
+// meant to be public: the designs are guarded by sign-in and the members table (supabase/schema.sql),
+// never by this key. Left empty (url:"", key:""), the tool shows no shared-list controls and works as before.
+const CLOUD={ url:"https://fkhwlsvhxgvxjvrzluiu.supabase.co", key:"sb_publishable_kGZFjF0xCFI1skJDufa3pw_1sGGLp5Y" };
+/* ---- the shared list: the design list kept in Supabase (pilot) ---- */
+// The same calls as the database in db.js (list, get, save, saveMany, remove), over Supabase's REST API
+// with plain fetch — nothing to download. Sign-in is email and password; the session stays in this
+// browser (localStorage) and is renewed when it runs out. Only the members in supabase/schema.sql can
+// read or change a design. Without a connection, or signed out, the list is this browser's, as before.
+const CLOUD_SESSION="palletlab.cloud.session";
+const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+const cloudBase = () => CLOUD.url.replace(/\/+$/,"");
+function cloudSession(){
+  try{ const s=JSON.parse(localStorage.getItem(CLOUD_SESSION)||"null");
+       return s && typeof s.access_token==="string" && typeof s.refresh_token==="string" ? s : null; }catch(e){ return null; }
+}
+function cloudKeep(s){ try{ if(s) localStorage.setItem(CLOUD_SESSION,JSON.stringify(s)); else localStorage.removeItem(CLOUD_SESSION); }catch(e){} }
+// Supabase Auth: a session from a sign-in or a renewal
+async function cloudAuth(path,body,token){
+  let r;
+  try{ r=await fetch(cloudBase()+"/auth/v1/"+path,{method:"POST",
+         headers:{apikey:CLOUD.key,"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})},
+         body:JSON.stringify(body||{})}); }
+  catch(e){ throw dbError("offline",e); }
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw dbError(r.status>=400 && r.status<500 ? "denied" : "other",
+                          {message:j.error_description||j.msg||j.message||("HTTP "+r.status)});
+  return j;
+}
+const cloudFrom = (j,email) => ({access_token:j.access_token, refresh_token:j.refresh_token,
+  expires_at: j.expires_at || Math.floor(Date.now()/1000)+(j.expires_in||3600), email:(j.user && j.user.email) || email || ""});
+async function cloudSignIn(email,password){
+  const s=cloudFrom(await cloudAuth("token?grant_type=password",{email,password}),email);
+  cloudKeep(s); return s;
+}
+// a valid access token, renewed a minute before it runs out (or now, `force`). One renewal at a time;
+// a refused renewal signs out, unless another tab has just renewed the session itself
+let cloudRenewing=null;
+function cloudToken(force){
+  const s=cloudSession();
+  if(!s) return Promise.reject(dbError("signedout"));
+  if(!force && s.expires_at-60>Date.now()/1000) return Promise.resolve(s.access_token);
+  if(!cloudRenewing) cloudRenewing=(async()=>{
+    try{
+      const n=cloudFrom(await cloudAuth("token?grant_type=refresh_token",{refresh_token:s.refresh_token}),s.email);
+      cloudKeep(n); return n.access_token;
+    }catch(e){
+      if(e.kind!=="denied") throw e;
+      const t=cloudSession();
+      if(t && t.refresh_token!==s.refresh_token) return t.access_token;
+      cloudKeep(null); throw dbError("signedout",e);
+    }finally{ cloudRenewing=null; }
+  })();
+  return cloudRenewing;
+}
+// one REST call; a token that ran out on the way is renewed and the call made once more
+async function cloudREST(method,path,body,prefer){
+  const go=async token=>{
+    try{ return await fetch(cloudBase()+"/rest/v1/"+path,{method,
+           headers:{apikey:CLOUD.key,Authorization:"Bearer "+token,"Content-Type":"application/json",...(prefer?{Prefer:prefer}:{})},
+           body:body===undefined ? undefined : JSON.stringify(body)}); }
+    catch(e){ throw dbError("offline",e); }
+  };
+  let r=await go(await cloudToken());
+  if(r.status===401) r=await go(await cloudToken(true));
+  if(r.status===401){ cloudKeep(null); throw dbError("signedout"); }
+  const txt=await r.text(); let j=null;
+  try{ j=txt ? JSON.parse(txt) : null; }catch(e){}
+  if(!r.ok) throw dbError(r.status===403 ? "denied" : "other", {message:(j && j.message) || ("HTTP "+r.status)});
+  return j;
+}
+const cloudBackend={
+  kind:"cloud", where:"the shared list",
+  async list(){
+    const rows=[], page=1000;
+    for(let off=0;;off+=page){
+      const got=await cloudREST("GET",`designs?select=id,name,type,client,part_no,saved,updated_by&order=id.asc&limit=${page}&offset=${off}`)||[];
+      got.forEach(r=>rows.push({id:r.id, name:r.name, type:r.type, client:r.client, partNo:r.part_no, saved:r.saved, by:r.updated_by}));
+      if(got.length<page) return rows;
+    }
+  },
+  async get(id){
+    const got=await cloudREST("GET",`designs?select=state&id=eq.${encodeURIComponent(id)}`);
+    return got && got[0] ? got[0].state : undefined;
+  },
+  async save(name,state,source){
+    const got=await cloudREST("POST","rpc/save_design",{p_name:name, p_state:state, p_source:source||""});
+    if(!got || !got[0]) throw dbError("denied");
+    return {id:got[0].id, updated:!!got[0].updated};
+  },
+  async saveMany(items){
+    const got=await cloudREST("POST","rpc/save_designs",{p_items:items.map(({name,state,source})=>({name,state,source:source||""}))});
+    const r=(got && got[0]) || {added:0, updated:0};
+    return {added:r.added, updated:r.updated};
+  },
+  async remove(id){ await cloudREST("DELETE",`designs?id=eq.${encodeURIComponent(id)}`,undefined,"return=minimal"); },
+};
+// what a failed step on the shared list tells the person
+function cloudWhy(e){
+  return e.kind==="offline" ? "could not reach the shared list — check the internet connection"
+       : e.kind==="signedout" ? "signed out of the shared list — sign in again"
+       : e.kind==="denied" ? "this account can't change the shared list"
+       : "the shared list refused it"+(e.message ? ` (${e.message})` : "");
+}
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+
+// switch the list to the shared one; false (this browser's list stays) when it can't be used.
+// Runs inside a libRun step.
+async function cloudStart(){
+  try{
+    if((await cloudREST("POST","rpc/is_member",{}))!==true){
+      const s=cloudSession(); cloudKeep(null);
+      if(s) cloudAuth("logout",{},s.access_token).catch(()=>{});
+      toast("This account is not a member of the shared list — ask to be added");
+      return false;
+    }
+    designDB=cloudBackend; await libReload();
+    clearInterval(cloudLookT); cloudLookT=setInterval(cloudLook,60000);
+  }catch(e){
+    designDB=libLocal; await libReloadSafe();
+    toast(e.kind==="signedout" ? "Signed out of the shared list — sign in again"
+        : e.kind==="offline" ? "Could not reach the shared list — showing this browser's list"
+        : "The shared list could not be opened — showing this browser's list");
+    return false;
+  }
+  return true;
+}
+// back to this browser's list (signed out, or the session could not be renewed). Inside a libRun step.
+async function cloudStop(msg){
+  clearInterval(cloudLookT); cloudLookT=0;
+  designDB=libLocal; $("libFind").value="";
+  await libReloadSafe(); libRender(); cloudUI();
+  if(msg) toast(msg);
+}
+function cloudUI(){
+  const on=cloudOn() && libOK && !!libLocal, shared=!!designDB && designDB.kind==="cloud";
+  $("cloudBox").style.display = on ? "" : "none";
+  $("cloudSignedOut").style.display = on && !shared ? "" : "none";
+  $("cloudSignedIn").style.display = on && shared ? "" : "none";
+  const s=cloudSession();
+  $("cloudUser").textContent = shared && s ? s.email : "";
+  $("secLib").classList.toggle("shared", shared);
+}
+// other people change the shared list too: look again when this page comes back into view, and every
+// minute while it is in view — only while the shared list is in use (a hidden page asks nothing)
+let cloudLookT=0;
+const cloudLook = () => { if(designDB && designDB.kind==="cloud" && document.visibilityState!=="hidden") libChanged(); };
+window.addEventListener("focus",cloudLook);
+document.addEventListener("visibilitychange",cloudLook);
+
+function cloudSignInClick(){
+  const email=$("cloudEmail").value.trim(), pw=$("cloudPass").value;
+  if(!email || !pw){ toast("Enter the email and password of your shared-list account"); return; }
+  libRun(async()=>{
+    try{ await cloudSignIn(email,pw); }
+    catch(e){
+      toast(e.kind==="offline" ? "Could not reach the shared list — check the internet connection"
+          : e.kind==="denied" && /invalid login credentials/i.test(e.message) ? "Could not sign in: wrong email or password"
+          : "Could not sign in: "+e.message);
+      return;
+    }finally{ $("cloudPass").value=""; }
+    const ok=await cloudStart();
+    $("libFind").value=""; libRender(); cloudUI();
+    if(ok) toast("Signed in — this is the shared list");
+  });
+}
+$("btnCloudIn").addEventListener("click",cloudSignInClick);
+$("cloudPass").addEventListener("keydown",e=>{ if(e.key==="Enter") cloudSignInClick(); });
+$("btnCloudOut").addEventListener("click",()=>{
+  libRun(async()=>{
+    const s=cloudSession(); cloudKeep(null);
+    if(s) cloudAuth("logout",{},s.access_token).catch(()=>{});   // ends the session on the server too; signed out here either way
+    await cloudStop("Signed out — this is this browser's list");
+  });
+});
+// copy every design of this browser's list into the shared list (designs there with the same name are replaced)
+$("btnCloudCopy").addEventListener("click",()=>{
+  libRun(async()=>{
+    if(!designDB || designDB.kind!=="cloud") return;
+    let items=[];
+    try{
+      for(const r of await libLocal.list()){ const st=await libLocal.get(r.id); if(st && typeof st==="object") items.push({name:r.name, state:st, source:"browser"}); }
+    }catch(e){ toast("Could not read this browser's list"); return; }
+    if(!items.length){ toast("This browser's list is empty — nothing to copy"); return; }
+    if(!window.confirm(`Copy the ${items.length} design${items.length===1?"":"s"} saved in this browser to the shared list? Designs there with the same name are replaced.`)) return;
+    let r;
+    try{ r=await designDB.saveMany(items); }
+    catch(e){ if(e.kind==="signedout") await cloudStop(); toast("Nothing copied: "+cloudWhy(e)); return; }
+    const keep=$("libSel").value; await libReloadSafe(); libRender(keep==="" ? null : keep); libNotify();
+    const n=r.added+r.updated;
+    toast(`Copied ${n} design${n===1?"":"s"} to the shared list`+(r.updated ? ` (${r.updated} replaced one of the same name)` : ""));
+  });
+});
 /* ---- design file ---- */
 // Every file saved or loaded also goes into the design list (libAdd), under the file's name.
 const slug = s => (s||"").trim().replace(/[^\p{L}\p{N}_.-]+/gu,"-").replace(/^-+|-+$/g,"");
@@ -2082,21 +2295,32 @@ const readText = file => new Promise(ok=>{
 });
 
 /* ---- design list: every design in the database, searchable (off if this browser blocks storage) ---- */
-let designDB=null, libOK=true, libRows=[], libQ=Promise.resolve();
+// designDB is the list in use: this browser's (libLocal: db.js) or, signed in, the shared one (cloud.js)
+let designDB=null, libLocal=null, libOK=true, libRows=[], libQ=Promise.resolve();
 // list work runs one step at a time, in order, so a pick never reads a list that a save is still changing
 function libRun(fn){ const p=libQ.then(fn); libQ=p.catch(()=>{}); return p; }
 // resolves once the list has settled (the browser checks wait on it)
 function libIdle(){ return libQ.then(()=>{}); }
+const libShared = () => !!designDB && designDB.kind==="cloud";
 // search text: no capitals, no accents (Peñoles finds penoles)
 const fold = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 // the rows, read again once per change (never per keystroke); each keeps the text a search looks at
 async function libReload(){
   const s=v=>typeof v==="string" ? v : "";
   libRows=(await designDB.list()).map(r=>{
-    const row={id:r.id, name:r.name, client:s(r.client), partNo:s(r.partNo), type:s(r.type), saved:s(r.saved)};
+    const row={id:r.id, name:r.name, client:s(r.client), partNo:s(r.partNo), type:s(r.type), saved:s(r.saved), by:s(r.by)};
     row.q=fold([row.name, row.client, row.partNo, row.type, row.saved.slice(0,10)].join(" "));
     return row;
   });
+}
+// the same, when a failure must not stop the step: this browser's list turns off (storage refused);
+// the shared list keeps what it showed, or signs out when the session can't be renewed
+async function libReloadSafe(){
+  try{ await libReload(); }
+  catch(e){
+    if(!libShared()){ libOff(); return; }
+    if(e.kind==="signedout") await cloudStop(cap(cloudWhy(e)));
+  }
 }
 function libOff(){
   libOK=false; libRows=[];
@@ -2111,11 +2335,11 @@ function libMatches(){
 // show the list; `keep` (an id) stays picked when it is shown
 function libRender(keep){
   const s=$("libSel"), {words,rows}=libMatches(), n=libRows.length;
-  const opt=(v,t)=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; return o; };
+  const opt=(v,t,tip)=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; if(tip) o.title=tip; return o; };
   const frag=document.createDocumentFragment();
-  frag.appendChild(opt("", !words.length ? "\u2014 saved in this browser \u2014"
+  frag.appendChild(opt("", !words.length ? (libShared() ? "\u2014 shared list \u2014" : "\u2014 saved in this browser \u2014")
                          : rows.length ? `\u2014 ${rows.length} of ${n} match \u2014` : "\u2014 no match \u2014"));
-  rows.forEach(r=>frag.appendChild(opt(String(r.id), r.name+" \u00b7 "+r.saved.slice(0,10))));
+  rows.forEach(r=>frag.appendChild(opt(String(r.id), r.name+" \u00b7 "+r.saved.slice(0,10), r.by ? "last saved by "+r.by : "")));
   s.textContent=""; s.appendChild(frag);
   s.value = keep!=null && rows.some(r=>String(r.id)===String(keep)) ? String(keep) : "";
   $("libFind").placeholder=`search ${n} saved design${n===1?"":"s"}`;
@@ -2125,7 +2349,7 @@ const libRow = v => libRows.find(r=>String(r.id)===v);
 function libRefresh(keep){
   return libRun(async()=>{
     if(!libOK) return;
-    try{ await libReload(); }catch(e){ libOff(); }
+    await libReloadSafe();
     libRender(keep);
   });
 }
@@ -2159,12 +2383,13 @@ function libAdd(name,state,source,done){
     let r;
     try{ r=await designDB.save(name,state,source); }
     catch(e){
+      if(libShared()){ if(e.kind==="signedout") await cloudStop(); toast(done+" — not added to the shared list: "+cloudWhy(e)); return; }
       if(e.kind==="blocked"){ libOff(); libRender(); return; }
       toast(done+(e.kind==="full" ? " — this browser's storage is full, so it was not added to the design list"
                                   : " — it could not be added to the design list"));
       return;
     }
-    try{ await libReload(); }catch(e){ libOff(); }
+    await libReloadSafe();
     libShow(r.id); libNotify();
   });
 }
@@ -2183,13 +2408,14 @@ function libImport(files){
     let r;
     try{ r=await designDB.saveMany(items); }
     catch(e){
+      if(libShared()){ if(e.kind==="signedout") await cloudStop(); toast("Nothing imported: "+cloudWhy(e)); return; }
       if(e.kind==="blocked"){ libOff(); libRender(); }
       toast(e.kind==="full" ? "This browser's storage is full — nothing was imported. Delete saved designs to make room"
                             : "Could not import into this browser");
       return;
     }
     const keep=$("libSel").value;
-    try{ await libReload(); }catch(e){ libOff(); }
+    await libReloadSafe();
     libRender(keep==="" ? null : keep); libNotify();
     const n=r.added+r.updated;
     toast(`Imported ${n} design${n===1?"":"s"}`+(r.updated ? ` (${r.updated} replaced a saved design of the same name)` : "")+
@@ -2203,20 +2429,26 @@ $("btnLibSave").addEventListener("click",()=>{
   const dflt=($("partNo").value.trim()||$("client").value.trim()||palletType+" "+$("L").value+"x"+$("W").value);
   const name=(window.prompt("Save design as:",dflt)||"").trim();
   if(!name) return;
+  // on the shared list, a design someone else saved under this name is only replaced when asked
+  if(libShared()){
+    const me=(cloudSession()||{}).email||"", was=libRows.find(r=>r.name===name);
+    if(was && was.by && was.by!==me && !window.confirm(`"${name}" in the shared list was last saved by ${was.by}. Replace it?`)) return;
+  }
   const st=collectState();
   libRun(async()=>{
     if(!libOK) return;
     let r;
     try{ r=await designDB.save(name,st,"browser"); }
     catch(e){
+      if(libShared()){ if(e.kind==="signedout") await cloudStop(); else libRender($("libSel").value); toast("Not saved: "+cloudWhy(e)); return; }
       if(e.kind==="blocked") libOff();
-      else { try{ await libReload(); }catch(_){ libOff(); } }
+      else await libReloadSafe();
       libRender($("libSel").value);
       toast(e.kind==="full" ? "This browser's storage is full — delete a saved design, or use SAVE FILE"
                             : "Could not save to this browser");
       return;
     }
-    try{ await libReload(); }catch(e){ libOff(); }
+    await libReloadSafe();
     libShow(r.id); toast((r.updated?"Updated ":"Saved ")+name); libNotify();
   });
 });
@@ -2225,7 +2457,11 @@ $("libSel").addEventListener("change",()=>{
   const d=libRow(v); if(!d) return;
   libRun(async()=>{
     let st;
-    try{ st=await designDB.get(d.id); }catch(e){ toast("Could not load: this browser's storage could not be read"); return; }
+    try{ st=await designDB.get(d.id); }
+    catch(e){
+      if(libShared()){ if(e.kind==="signedout") await cloudStop(); toast("Could not load: "+cloudWhy(e)); return; }
+      toast("Could not load: this browser's storage could not be read"); return;
+    }
     if($("libSel").value!==v) return;             // another design was picked meanwhile
     try{ applyState(st,"Loaded "+d.name); }catch(err){ toast("Could not load: "+err.message); }
   });
@@ -2234,20 +2470,24 @@ $("btnLibDel").addEventListener("click",()=>{
   const v=$("libSel").value;
   if(v===""){ toast("Pick a saved design first"); return; }
   const d=libRow(v); if(!d) return;
-  if(!window.confirm('Delete "'+d.name+'" from this browser?')) return;
+  if(!window.confirm(libShared() ? `Delete "${d.name}" from the shared list? It is deleted for everyone.`
+                                 : 'Delete "'+d.name+'" from this browser?')) return;
   libRun(async()=>{
-    let ok=true;
-    try{ await designDB.remove(d.id); }catch(e){ ok=false; if(e.kind==="blocked") libOff(); }
-    if(libOK){ try{ await libReload(); }catch(e){ libOff(); } }
+    let ok=true, err=null;
+    try{ await designDB.remove(d.id); }catch(e){ ok=false; err=e; if(e.kind==="blocked" && !libShared()) libOff(); }
+    if(!ok && libShared() && err.kind==="signedout"){ await cloudStop(); toast("Not deleted: "+cloudWhy(err)); return; }
+    if(libOK) await libReloadSafe();
     libRender(ok ? null : v);
-    toast(ok ? "Deleted "+d.name : "Could not delete from this browser");
+    toast(ok ? "Deleted "+d.name : libShared() ? "Not deleted: "+cloudWhy(err) : "Could not delete from this browser");
     if(ok) libNotify();
   });
 });
-// open the database (moving the older in-browser list into it the first time) and show the list
+// open the database (moving the older in-browser list into it the first time) and show the list;
+// signed in to the shared list before, it comes back to the shared list
 libRun(async()=>{
-  try{ designDB=await designDBOpen(); await libReload(); }catch(e){ libOff(); }
-  libRender();
+  try{ libLocal=await designDBOpen(); designDB=libLocal; await libReload(); }catch(e){ libOff(); }
+  if(libOK && cloudOn() && cloudSession()) await cloudStart();
+  libRender(); cloudUI();
 });
 
 // a resize only changes the drawing area, not the design: redraw the design as last worked out

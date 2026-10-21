@@ -27,6 +27,20 @@
 <!-- ============ LEFT : DESIGN INPUTS ============ -->
 <div class="col">
   <div class="sec" id="secLib"><h2>DESIGNS</h2>
+    <div id="cloudBox" style="display:none">
+      <div id="cloudSignedOut">
+        <input type="email" id="cloudEmail" placeholder="email — shared list" autocomplete="username" spellcheck="false">
+        <input type="password" id="cloudPass" placeholder="password" autocomplete="current-password">
+        <div class="btnRow"><button id="btnCloudIn">SIGN IN TO THE SHARED LIST</button></div>
+      </div>
+      <div id="cloudSignedIn" style="display:none">
+        <div class="cloudWho">● SHARED LIST · <span id="cloudUser"></span></div>
+        <div class="btnRow">
+          <button id="btnCloudCopy" title="Copy every design saved in this browser to the shared list">⭱ COPY BROWSER LIST</button>
+          <button id="btnCloudOut" class="dim">SIGN OUT</button>
+        </div>
+      </div>
+    </div>
     <input type="search" id="libFind" placeholder="search saved designs" autocomplete="off" spellcheck="false">
     <select id="libSel"><option value="">— saved in this browser —</option></select>
     <div class="btnRow">
