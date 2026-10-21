@@ -1,0 +1,13 @@
+{
+  "name": "pallet-lab-tests",
+  "private": true,
+  "description": "Automatic checks for ../pallet-lab.html",
+  "scripts": {
+    "test": "node sweep.js 1000 && node sweep_edge.js 1000 && node nest.js 300 && node oldfiles.js",
+    "test:quick": "node sweep.js 200 && node sweep_edge.js 200 && node nest.js 60 && node oldfiles.js",
+    "compare": "node compare_versions.js 600"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1"
+  }
+}

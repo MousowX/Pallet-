@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PALLET·LAB — Design · Analysis</title>
+<style>
+:root{
+  --bg:#15171b; --panel:#1c1f24; --panel2:#202329; --line:#2b2f37;
+  --text:#d7dbe0; --dim:#8b929c; --faint:#5b616b;
+  --accent:#62c073; --gov:#e8a33d; --ok:#62c073; --warn:#e0995a; --bad:#e06c5a;
+  --mono:"JetBrains Mono","SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;overflow:hidden}
+
+/* ---------- layout ---------- */
+#app{display:grid;grid-template-rows:44px 1fr;height:100vh}
+header{display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:.28em;color:var(--accent)}
+header h1 span{color:var(--dim);font-weight:400;letter-spacing:.18em}
+.typeToggle{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.typeToggle button{background:none;border:0;color:var(--dim);font-family:var(--mono);font-size:11px;padding:5px 12px;cursor:pointer;letter-spacing:.08em}
+.typeToggle button.on{background:var(--accent);color:#0d1a10;font-weight:700}
+header .sp{flex:1}
+.hbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;letter-spacing:.06em}
+.hbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+#main{display:grid;grid-template-columns:250px 1fr 312px;min-height:0}
+.col{overflow-y:auto;background:var(--panel);border-right:1px solid var(--line)}
+.col:last-child{border-right:0;border-left:1px solid var(--line)}
+.col::-webkit-scrollbar{width:8px}.col::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+
+/* ---------- panels ---------- */
+.sec{border-bottom:1px solid var(--line);padding:10px 12px 12px}
+.sec h2{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.22em;color:var(--faint);margin-bottom:9px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.row label{color:var(--dim);font-size:11px;flex:1}
+.row input[type=number],.row input[type=text],.row select{width:86px;background:var(--bg);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px;text-align:right}
+.row input[type=text]{width:130px;text-align:left}
+.row select{text-align:left;width:118px}
+.row input:focus,.row select:focus{outline:none;border-color:var(--accent)}
+.row input.bad{border-color:var(--bad);color:var(--bad)}
+.unit{color:var(--faint);font-size:10px;width:20px}
+.hint{color:var(--faint);font-size:10px;line-height:1.5;margin-top:6px}
+.btnRow{display:flex;gap:5px;margin-top:6px}
+.btnRow button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  font-family:var(--mono);font-size:10.5px;padding:5px 4px;border-radius:3px;cursor:pointer;letter-spacing:.04em}
+.btnRow button:hover{border-color:var(--accent);color:var(--accent)}
+.btnRow button.dim{color:var(--faint)}
+.btnRow button.dim:hover{border-color:var(--bad);color:var(--bad)}
+#libSel{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+  font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px}
+
+/* ---------- viewport ---------- */
+/* drawing on top, readout + warnings in a strip underneath — nothing overlays the drawing */
+#viewport{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+#cvWrap{position:relative;flex:1;min-height:0}
+#cv{position:absolute;inset:0;display:block;width:100%;height:100%}
+#vpTag{position:absolute;top:10px;left:12px;color:var(--faint);font-size:10px;letter-spacing:.14em}
+#vpFoot{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:7px 12px 9px;border-top:1px solid var(--line)}
+#vpDims{color:var(--dim);font-size:11px;line-height:1.7}
+#vpDims b{color:var(--accent);font-weight:400}
+#warn{max-width:58%;text-align:right;color:var(--bad);font-size:10.5px;line-height:1.6}
+#toast{position:absolute;top:12px;right:12px;background:var(--panel2);border:1px solid var(--accent);color:var(--accent);
+  padding:7px 12px;border-radius:4px;font-size:11px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+
+/* ---------- results ---------- */
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:9px 10px;margin-bottom:8px}
+.card .ct{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.card .ct h3{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--dim)}
+.card .cap{font-size:17px;font-weight:700;color:var(--ok)}
+.card .cap.mid{color:var(--warn)}
+.card .cap small{font-size:10px;color:var(--faint);font-weight:400}
+.card .sub{color:var(--faint);font-size:10px;line-height:1.65}
+.card .sub b{color:var(--dim);font-weight:400}
+.govern{border-color:var(--gov)}
+.govern .ct h3::after{content:" · GOVERNS";color:var(--gov)}
+
+table.bom{width:100%;border-collapse:collapse;font-size:10.5px}
+table.bom td{padding:3px 2px;border-bottom:1px solid var(--line);color:var(--dim)}
+table.bom td:last-child{text-align:right;color:var(--text)}
+table.bom tr.tt td{color:var(--text);border-bottom:0;padding-top:6px}
+table.bom tr.tt td:last-child{color:var(--accent);font-weight:700;font-size:12px}
+
+table.det{width:100%;border-collapse:collapse;font-size:10.5px}
+table.det td{padding:3px 2px;border-bottom:1px solid var(--line);color:var(--dim);vertical-align:top}
+table.det td:first-child{white-space:nowrap;padding-right:10px}
+table.det td:last-child{text-align:right;color:var(--text)}
+table.det td small{display:block;color:var(--faint);font-size:9.5px;line-height:1.45;margin-top:1px}
+table.det tr.gh td{color:var(--faint);font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.16em;text-align:left;padding:10px 2px 3px}
+table.det tr.gh:first-child td{padding-top:0}
+table.det td.bad{color:var(--bad)}
+
+.disc{color:var(--faint);font-size:9.5px;line-height:1.6;padding:10px 12px}
+
+/* ---------- print spec sheet ---------- */
+#spec{display:none}
+@media print{
+  @page{size:auto;margin:0}          /* no margin = browser prints no URL/filename header or footer */
+  html,body{background:#fff !important;height:auto;overflow:visible}   /* white paper even with "background graphics" on */
+  #app{display:none}
+  #spec{display:block;font-family:Georgia,serif;color:#111;font-size:12px;padding:11mm 14mm;
+        -webkit-box-decoration-break:clone;box-decoration-break:clone}   /* same margin on every printed page */
+  #spec h1{font-family:Arial,sans-serif;font-size:18px;letter-spacing:.12em;border-bottom:3px solid #111;padding-bottom:6px;margin-bottom:2px}
+  #spec .meta{color:#666;font-size:10px;margin-bottom:8px}
+  #spec h2{font-family:Arial,sans-serif;font-size:12px;letter-spacing:.1em;margin:10px 0 4px}
+  #spec table{width:100%;border-collapse:collapse;font-size:11px}
+  #spec td,#spec th{border:1px solid #999;padding:2px 7px;text-align:left}
+  #spec th{background:#eee;font-family:Arial,sans-serif;font-size:10px}
+  #spec tr{break-inside:avoid}
+  #spec .note{font-size:9px;color:#555;margin-top:6px;line-height:1.45}
+  #spec td.g{width:17%;font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:.06em;vertical-align:top;padding-top:3px}
+  #spec td.gv{font-size:9.5px;line-height:1.35}
+  #spec .bad{color:#b3261e;font-weight:700}
+  #spec .keep{break-inside:avoid}      /* a heading never prints alone at the foot of a page */
+  #spec img{display:block}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>PALLET<span>·LAB</span></h1>
+  <div class="typeToggle">
+    <button id="tStr" class="on">STRINGER</button>
+    <button id="tBlk">BLOCK</button>
+    <button id="tBox">PALLET BOX</button>
+  </div>
+  <div class="sp"></div>
+  <button class="hbtn" id="btnReset">RESET GMA 48×40</button>
+  <button class="hbtn" id="btnPrint">⎙ PRINT SPEC SHEET</button>
+</header>
+
+<div id="main">
+<!-- ============ LEFT : DESIGN INPUTS ============ -->
+<div class="col">
+  <div class="sec"><h2>DESIGNS</h2>
+    <select id="libSel"><option value="">— saved in this browser —</option></select>
+    <div class="btnRow">
+      <button id="btnLibSave">SAVE HERE</button>
+      <button id="btnLibDel" class="dim">DELETE</button>
+    </div>
+    <div class="btnRow">
+      <button id="btnFileSave">⭳ SAVE FILE</button>
+      <button id="btnFileLoad">⭱ LOAD FILE</button>
+    </div>
+    <input type="file" id="fileIn" accept=".json,application/json" style="display:none">
+    <div class="hint" id="libHint">A design file (.json) keeps every input — send it with the drawing or archive it per part number. Loading one restores the whole design.</div>
+  </div>
+
+  <div class="sec"><h2>IDENTIFICATION</h2>
+    <div class="row"><label>Client</label><input type="text" id="client" placeholder="—" maxlength="60"></div>
+    <div class="row"><label>Part #</label><input type="text" id="partNo" placeholder="—" maxlength="40"></div>
+  </div>
+
+  <div class="sec"><h2>FOOTPRINT</h2>
+    <div class="row"><label>Length (stringer dir.)</label><input type="number" id="L" value="48" step="1" min="12" max="240"><span class="unit">in</span></div>
+    <div class="row"><label>Width (deck dir.)</label><input type="number" id="W" value="40" step="1" min="12" max="240"><span class="unit">in</span></div>
+  </div>
+
+  <div class="sec"><h2>TOP DECK</h2>
+    <div class="row"><label>Board count</label><input type="number" id="dCount" value="7" step="1" min="2" max="40"><span class="unit"></span></div>
+    <div class="row"><label>Board width</label><input type="number" id="dWidth" value="3.5" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>End board width</label><input type="number" id="dLead" value="5.5" placeholder="same" data-blank="same" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>Board thickness</label><input type="number" id="dThk" value="0.75" step="0.0625" min="0.375" max="2"><span class="unit">in</span></div>
+  </div>
+
+  <div class="sec"><h2>BOTTOM DECK</h2>
+    <div class="row"><label>Board count</label><input type="number" id="bCount" value="5" step="1" min="0" max="40"><span class="unit"></span></div>
+    <div class="row"><label>Board width</label><input type="number" id="bWidth" value="3.5" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>End board width</label><input type="number" id="bLead" value="5.5" placeholder="same" data-blank="same" step="0.25" min="2" max="12"><span class="unit">in</span></div>
+    <div class="row"><label>Board thickness</label><input type="number" id="bThk" value="0.75" step="0.0625" min="0.375" max="2"><span class="unit">in</span></div>
+    <div class="row" id="rowBotLay"><label>Layout</label><select id="bLay">
+      <option value="notch" selected>Clear the notches (GMA)</option>
+      <option value="even">Even spacing</option>
+    </select></div>
+    <div class="hint">End boards are the two at the pallet ends (leave blank for the same width as the rest). "Clear the notches" keeps the inner bottom boards between the notches so forks can enter from the sides.</div>
+  </div>
+
+  <div class="sec" id="secStringer"><h2>STRINGERS</h2>
+    <div class="row"><label>Count</label><input type="number" id="sCount" value="3" step="1" min="2" max="9"><span class="unit"></span></div>
+    <div class="row"><label>Thickness (b)</label><input type="number" id="sThk" value="1.5" step="0.125" min="0.75" max="4"><span class="unit">in</span></div>
+    <div class="row"><label>Height (h)</label><input type="number" id="sHgt" value="3.5" step="0.25" min="2" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Notched (fork entry)</label><select id="sNotch"><option value="1">Yes — 4-way</option><option value="0">No — 2-way</option></select></div>
+    <div class="row notchRow"><label>Notch length</label><input type="number" id="nLen" value="9" step="0.5" min="4" max="16"><span class="unit">in</span></div>
+    <div class="row notchRow"><label>Notch depth</label><input type="number" id="nDep" value="1.5" step="0.125" min="0.5" max="3"><span class="unit">in</span></div>
+    <div class="row notchRow"><label>Notch from each end</label><input type="number" id="nEnd" value="8.5" step="0.25" min="0" max="100"><span class="unit">in</span></div>
+  </div>
+
+  <div class="sec" id="secBox" style="display:none"><h2>BOX — CLEATED PLYWOOD PANELS</h2>
+    <div class="row"><label>Base type</label><select id="boxBase">
+      <option value="stringer" selected>Stringer base</option>
+      <option value="block">Block base — 4-way</option>
+    </select></div>
+    <div class="row"><label>Box floor</label><select id="floorType">
+      <option value="boards" selected>Deckboards (tablas)</option>
+      <option value="ply">Triplay sheet — no boards</option>
+      <option value="plyboards">Triplay over boards</option>
+    </select></div>
+    <div class="row" id="rowFloorPly" style="display:none"><label>Floor triplay</label><select id="floorPlyT">
+      <option value="0.375">3/8″ (9 mm)</option>
+      <option value="0.5" selected>1/2″ (12 mm)</option>
+      <option value="0.625">5/8″ (15 mm)</option>
+      <option value="0.75">3/4″ (18 mm)</option>
+    </select></div>
+    <div class="row"><label>Wall height</label><input type="number" id="wH" value="30" step="1" min="6" max="120"><span class="unit">in</span></div>
+    <div class="row"><label>Plywood panel</label><select id="plyT">
+      <option value="0.25">1/4″ (6 mm)</option>
+      <option value="0.375" selected>3/8″ (9 mm)</option>
+      <option value="0.5">1/2″ (12 mm)</option>
+      <option value="0.625">5/8″ (15 mm)</option>
+      <option value="0.75">3/4″ (18 mm)</option>
+    </select></div>
+    <div class="row"><label>Cleat (t×w)</label><input type="number" id="cleatT" value="0.75" step="0.125" min="0.5" max="2" style="width:58px;padding:4px 3px"><input type="number" id="cleatW" value="3.5" step="0.25" min="1.5" max="6" style="width:58px;padding:4px 3px"><span class="unit">in</span></div>
+    <div class="row"><label>Max cleat spacing</label><input type="number" id="clSp" value="24" step="1" min="8" max="48"><span class="unit">in</span></div>
+    <div class="row"><label>Edge / corner cleats</label><select id="edgeCl">
+      <option value="in" selected>Interior — inside panel</option>
+      <option value="out">Exterior — laps corner joint</option>
+    </select></div>
+    <div class="row"><label>Intermediate cleats</label><select id="clOrient">
+      <option value="v" selected>Vertical</option>
+      <option value="h">Horizontal</option>
+    </select></div>
+    <div class="row"><label>Base attachment</label><select id="attach">
+      <option value="skirt" selected>Skirted — panels overlap base</option>
+      <option value="surface">On-deck — lag screws</option>
+    </select></div>
+    <div class="row skirtRow"><label>Side panel lap</label><input type="number" id="sideOv" value="2.5" step="0.25" min="0" max="8"><span class="unit">in</span></div>
+    <div class="row skirtRow"><label>End panel lap</label><input type="number" id="endOv" value="0.75" step="0.25" min="0" max="8"><span class="unit">in</span></div>
+    <div class="row"><label>Lid</label><select id="boxLid"><option value="1">Yes — cleated ply panel</option><option value="0">No — open top</option></select></div>
+    <button class="hbtn" id="btnPresetBox" style="width:100%;margin-top:4px">★ PRESET: EXPORT CRATE 48×40×30 · 3/8″ PLY</button>
+    <div class="hint">ASTM D6251-style cleated panel walls: 1×4 frame (2 rails + verticals at edges and every ≤ spacing), plywood sheathing. Edge cleats interior keep the crate flush to the pallet footprint; exterior lap the side-to-end corner joint (stronger corner, more interior room) but stand ct proud of the base on each face. Skirted: panels drop over the base edge and are nailed horizontally into it (fasteners in shear — standard for export). Side and end laps are set apart: keep the end lap at the deck so the forks fit between the stringers, and stop the side lap above the notches for side entry. On-deck: bottom rail lag-screwed down into stringers (detachable, weaker). Plywood is ISPM-15 exempt; lumber base and cleats are not.</div>
+  </div>
+
+  <div class="sec" id="secBlock" style="display:none"><h2>BLOCKS + STRINGER BOARDS</h2>
+    <div class="row"><label>Blocks along length</label><input type="number" id="kNL" value="3" step="1" min="2" max="8"><span class="unit"></span></div>
+    <div class="row"><label>Blocks along width</label><input type="number" id="kNW" value="3" step="1" min="2" max="8"><span class="unit"></span></div>
+    <div class="row"><label>Block size (square)</label><input type="number" id="kSize" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Block height</label><input type="number" id="kHgt" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Stringer boards</label><select id="kSBon">
+      <option value="1" selected>Yes — on blocks</option>
+      <option value="0">No — deck on blocks</option>
+    </select></div>
+    <div class="row"><label>Str. board thickness</label><input type="number" id="kSBt" value="0.75" step="0.0625" min="0.5" max="1.5"><span class="unit">in</span></div>
+    <div class="row"><label>Str. board width</label><input type="number" id="kSBw" value="3.5" step="0.25" min="2.5" max="6"><span class="unit">in</span></div>
+    <div class="hint">One stringer board runs lengthwise on each row of blocks, under the top deck, so their count follows "blocks along width". One bottom deckboard sits under each block column, so the BOTTOM DECK count follows "blocks along length". Every block lands on a board.</div>
+  </div>
+
+  <div class="sec"><h2>MATERIAL</h2>
+    <div class="row"><label>Species</label><select id="species"></select></div>
+    <div class="row"><label>Bending Fb</label><input type="number" id="Fb" value="850" step="25" min="100" max="5000"><span class="unit">psi</span></div>
+    <div class="row"><label>Stiffness E</label><input type="number" id="E" value="1100000" step="50000" min="100000" max="4000000"><span class="unit">psi</span></div>
+    <div class="row"><label>Compression Fc∥</label><input type="number" id="Fc" value="1310" step="25" min="100" max="5000"><span class="unit">psi</span></div>
+    <div class="hint">Dry lumber only (MC ≤ 19%) — no wet-service reduction applied. Defaults ≈ No.2 design values; Fb/E stay editable per lot.</div>
+  </div>
+
+  <div class="sec"><h2>ANALYSIS SETTINGS</h2>
+    <div class="row"><label>Safety factor (strength)</label><input type="number" id="SF" value="1.5" step="0.1" min="1" max="4"><span class="unit"></span></div>
+    <div class="row"><label>Deflection limit</label><input type="number" id="defPct" value="1.0" step="0.1" min="0.2" max="3"><span class="unit">%span</span></div>
+    <div class="row"><label>Rack bearing / side</label><input type="number" id="bearing" value="2" step="0.5" min="0.5" max="6"><span class="unit">in</span></div>
+    <div class="row"><label>Fork spacing (c-c)</label><input type="number" id="forkSp" value="24" step="1" min="12" max="40"><span class="unit">in</span></div>
+  </div>
+</div>
+
+<!-- ============ CENTER : 3D VIEW ============ -->
+<div id="viewport">
+  <div id="cvWrap">
+    <canvas id="cv"></canvas>
+    <div id="vpTag">ORTHOGRAPHIC SPEC — TOP · SIDE · END · DIMS IN INCHES</div>
+    <div id="toast"></div>
+  </div>
+  <div id="vpFoot">
+    <div id="vpDims"></div>
+    <div id="warn"></div>
+  </div>
+</div>
+
+<!-- ============ RIGHT : RESULTS ============ -->
+<div class="col">
+  <div class="sec"><h2>RATED CAPACITY — ESTIMATES</h2>
+    <div id="cards"></div>
+  </div>
+
+  <div class="sec"><h2 id="detTitle">PALLET DETAILS</h2>
+    <table class="det" id="det"></table>
+  </div>
+
+  <div class="sec"><h2>BILL OF MATERIALS</h2>
+    <table class="bom" id="bom"></table>
+  </div>
+
+  <div class="disc">ESTIMATES ONLY — simplified beam theory on uniform load, simply-supported spans. Not equivalent to PDS® certified analysis; not for contractual load certification. Verify critical designs by test or licensed engineer.</div>
+</div>
+</div>
+</div>
+
+<!-- printable spec sheet -->
+<div id="spec"></div>
+
+<script>
+"use strict";
+/* ================= SPECIES DATABASE — dry lumber only (MC ≤ 19%), approx. design values psi / lb·ft⁻³ ================= */
+const SPECIES = [
+  {n:"White Fir — seco",              Fb:850,  E:1100000, Fc:1310, den:26},
+  {n:"Pino Mexicano (Pinus spp.) — seco", Fb:1000, E:1300000, Fc:1400, den:28},
+];
+
+/* ================= STATE ================= */
+const $ = id => document.getElementById(id);
+let palletType = "stringer";
+const cv = $("cv"), ctx = cv.getContext("2d");
+
+const ids = ["L","W","dCount","dWidth","dLead","dThk","bCount","bWidth","bLead","bThk","sCount","sThk","sHgt","nLen","nDep","nEnd",
+             "kNL","kNW","kSize","kHgt","kSBt","kSBw","wH","cleatT","cleatW","clSp","sideOv","endOv",
+             "Fb","E","Fc","SF","defPct","bearing","forkSp"];
+// Every number the tool uses comes through here. A blank, non-numeric or out-of-range entry (also the
+// moment a field is cleared to type a new value) is used at the nearest allowed value, and the field gets
+// a red outline — so a half-typed number can never produce zero-width boards or negative capacities.
+// Fields marked data-blank="same" may be left empty on purpose and then read as 0.
+function V(id){
+  const el=$(id), raw=String(el.value).trim(), v=parseFloat(raw);
+  if(raw==="" && el.dataset.blank==="same"){ el.classList.remove("bad"); return 0; }
+  const lo=parseFloat(el.min), hi=parseFloat(el.max);
+  let x = Number.isFinite(v) ? v : (Number.isFinite(lo) ? lo : 0);
+  if(Number.isFinite(lo)) x=Math.max(lo,x);
+  if(Number.isFinite(hi)) x=Math.min(hi,x);
+  el.classList.toggle("bad", !(Number.isFinite(v) && x===v));
+  return x;
+}
+// one formatter for the drawing, the details panel and the print — rounded to 1/16″
+function inch(v){ const r=Math.round(Math.round(v*1e6)/1e6*16)/16;   // snap float noise first, so x.5/16 always rounds the same way
+  return (r%1===0?r.toFixed(0):r.toFixed(2).replace(/0+$/,'').replace(/\.$/,''))+'″'; }
+
+/* species dropdown */
+const spSel = $("species");
+SPECIES.forEach((s,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=s.n; spSel.appendChild(o); });
+spSel.addEventListener("change",()=>{ const s=SPECIES[spSel.value]; $("Fb").value=s.Fb; $("E").value=s.E; $("Fc").value=s.Fc; update("Species: "+s.n); });
+
+/* ================= GEOMETRY MODEL ================= */
+function spread(count, span, itemW){
+  // center positions across span, ends flush
+  if(count===1) return [span/2];
+  const pos=[];
+  for(let i=0;i<count;i++) pos.push(itemW/2 + i*(span-itemW)/(count-1));
+  return pos;
+}
+// notch geometry lives in the model so the drawing, the details and the capacity check agree:
+// two notches per stringer, the same distance in from each end
+function notchGeom(L,sH,on){
+  if(!on) return {notchL:0, notchD:0, notchX:[]};
+  const nL=Math.max(0,V("nLen")), nD=Math.max(0,V("nDep")), e=Math.max(0,V("nEnd"));
+  return {notchL:nL, notchD:nD, notchX:[e, L-e-nL]};
+}
+// Deck boards as [start,end] intervals along the length. The two end ("lead") boards sit flush
+// at the ends; the others are spread between them with equal gaps.
+function deckBoards(n, lead, inner, span){
+  if(n<=0) return [];
+  if(n===1) return [[span/2-lead/2, span/2+lead/2]];
+  const k=n-2, gap=(span-2*lead-k*inner)/(n-1), out=[[0,lead]];
+  let x=lead+gap;
+  for(let i=0;i<k;i++){ out.push([x,x+inner]); x+=inner+gap; }
+  out.push([span-lead,span]);
+  return out;
+}
+// Bottom deck.
+// Block base: one board under each block column (end boards flush, inner boards centred on the column).
+// Notched stringer base set to "clear the notches": end boards at the ends, inner boards grouped in the
+// space between the two notches, so the forks find bare floor under each notch (GMA layout).
+// Anything else: the same rule as the top deck.
+function bottomBoards(n, lead, inner, L, b, how){
+  if(n<=0) return {iv:[], mode:"none"};
+  if(b.kind==="block"){
+    const xs=spread(b.nBL, L, b.k), last=xs.length-1;
+    const iv=xs.map((x,i)=> i===0 ? [0,lead] : i===last ? [L-lead,L] : [x-inner/2, x+inner/2]);
+    // centred under the columns when that fits; boards too wide for it keep equal gaps instead
+    const fits=iv.every((q,i)=> i===0 || q[0]>=iv[i-1][1]-1e-9);
+    return fits ? {iv, mode:"columns"} : {iv:deckBoards(n,lead,inner,L), mode:"columns-even"};
+  }
+  if(how==="notch" && b.notch && n>=2){
+    const z0=b.notchX[0]+b.notchL, z1=b.notchX[1], room=z1-z0, k=n-2;
+    if(room>0 && k*inner<=room+1e-6){
+      const iv=[[0,lead]];
+      if(k===1) iv.push([(z0+z1-inner)/2, (z0+z1+inner)/2]);
+      if(k>1){ const g=(room-k*inner)/(k-1); for(let i=0;i<k;i++){ const x=z0+i*(inner+g); iv.push([x,x+inner]); } }
+      iv.push([L-lead,L]);
+      return {iv, mode:"notch"};
+    }
+    return {iv:deckBoards(n,lead,inner,L), mode:"even", noFit:{k, need:k*inner, room:Math.max(0,room)}};
+  }
+  return {iv:deckBoards(n,lead,inner,L), mode:"even"};
+}
+function buildModel(){
+  const L=V("L"), W=V("W");
+  const dC=Math.max(2,Math.round(V("dCount"))), dW=V("dWidth"), dT=V("dThk");
+  const bC=Math.max(0,Math.round(V("bCount"))), bW=V("bWidth"), bT=V("bThk");
+  const dLead=V("dLead")>0 ? V("dLead") : dW;          // end boards: blank = same as the others
+  const bLead=V("bLead")>0 ? V("bLead") : bW;
+  const bLay=$("bLay").value;
+  const topIv=deckBoards(dC,dLead,dW,L);
+  const dSum=Math.round(topIv.reduce((a,[s,e])=>a+(e-s),0)*1e6)/1e6;   // total deck width, for the deck's bending strength
+  const bom=[];
+  let H;
+  // deck lines grouped by board width, so 5.5″ end boards and 3.5″ inner boards list separately
+  const deckBom=(label,iv,t,len)=>{
+    const g=new Map();
+    iv.forEach(([a,b])=>{ const w=Math.round((b-a)*1e4)/1e4; g.set(w,(g.get(w)||0)+1); });
+    [...g.entries()].sort((x,y)=>y[0]-x[0])
+      .forEach(([w,q])=>bom.push({q, d:`${label} ${t}×${w}×${len}"`, bf:q*t*w*len/144}));
+  };
+  // identical pieces merge into one line (side and end cleats of the same length)
+  const piece=(q,d,bf)=>{ const o=bom.find(b=>b.d===d); if(o){ o.q+=q; o.bf+=bf; } else bom.push({q,d,bf}); };
+
+  let p;
+  if(palletType==="box"){
+    const bk=$("boxBase").value;
+    const y0 = bC>0 ? bT : 0;
+    // --- base structure ---
+    let baseTop, bp;
+    if(bk==="stringer"){
+      const sC=Math.max(2,Math.round(V("sCount"))), sB=V("sThk"), sH=V("sHgt");
+      const notch = $("sNotch").value==="1";
+      baseTop = y0+sH;
+      bp={sC,sB,sH,notch,...notchGeom(L,sH,notch)};
+    }else{
+      const k=V("kSize"), kH=V("kHgt");
+      const sbOn=$("kSBon").value==="1";
+      const nBL=Math.max(2,Math.round(V("kNL"))), nBW=Math.max(2,Math.round(V("kNW")));
+      const sbC=sbOn?nBW:0, sbT=sbOn?V("kSBt"):0, sbW=V("kSBw");   // one stringer board per block row
+      baseTop = y0+kH+sbT;
+      bp={k,kH,sbC,sbT,sbW,sbOn,nBL,nBW,nBlk:nBL*nBW};
+    }
+    // block base: one bottom deckboard under each block column, same as the block pallet
+    const bCe = (bk==="block" && bC>0) ? bp.nBL : bC;
+    const bot = bottomBoards(bCe, bLead, bW, L, {kind:bk,...bp}, bLay);
+    const ft=$("floorType").value, fPT=parseFloat($("floorPlyT").value);
+    const hasB = ft!=="ply", hasP = ft!=="boards";
+    const baseH = baseTop+(hasB?dT:0)+(hasP?fPT:0);
+    const wH=V("wH"), pT=parseFloat($("plyT").value);
+    const ct=V("cleatT"), cw=V("cleatW"), clSp=Math.max(8,V("clSp"));
+    const lid=$("boxLid").value==="1";
+    const attach=$("attach").value;
+    // skirt laps are set per face: side panels (long faces) and end panels (short faces), so the
+    // ends can stop at the deck and leave the fork openings between the stringers clear
+    const lapS = attach==="skirt" ? Math.min(Math.max(0,V("sideOv")), baseH) : 0;
+    const lapE = attach==="skirt" ? Math.min(Math.max(0,V("endOv")),  baseH) : 0;
+    const pHS = wH+lapS, pHE = wH+lapE;   // panel heights including the lap
+    const eW=W-2*pT;                       // end panels fit between side panels
+    const orient=$("clOrient").value, edgeCl=$("edgeCl").value;
+    // vertical mode: verticals at the edges + intermediates along the panel
+    // horizontal mode: 2 edge verticals per panel + rails top/bottom + horizontal intermediates up the height
+    const nVL = orient==="v" ? 2+Math.max(0,Math.ceil(L/clSp)-1) : 2;
+    const nVW = orient==="v" ? 2+Math.max(0,Math.ceil(eW/clSp)-1) : 2;
+    const nHS = orient==="h" ? 2+Math.max(0,Math.ceil(pHS/clSp)-1) : 2;   // horizontals per side panel, incl. rails
+    const nHE = orient==="h" ? 2+Math.max(0,Math.ceil(pHE/clSp)-1) : 2;   // horizontals per end panel
+    H = baseH + wH + (lid?pT:0);
+    const inset = edgeCl==="in" ? ct : 0;
+    const iL = L-2*pT-2*inset, iW = W-2*pT-2*inset;         // interior clear
+    const oL = L+(edgeCl==="out"?2*ct:0), oW = W+(edgeCl==="out"?2*ct:0);  // exterior overall
+    p={type:"box",base:bk,edgeCl,iL,iW,oL,oW,dC,dW,dLead,dT,dSum,topIv,
+       bC:bCe,bW,bLead,bT,botIv:bot.iv,botMode:bot.mode,botNoFit:bot.noFit,
+       ...bp,y0,baseTop,baseH,wH,sT:pT,pT,ct,cw,nVL,nVW,nHS,nHE,orient,lid,lidT:pT,
+       attach,lapS,lapE,pHS,pHE,floorType:ft,fPT,hasB,hasP};
+    if(hasB) deckBom("Floor deck",topIv,dT,W);
+    if(hasP) bom.push({q:1, d:`Floor panel ${fPT}" ply · ${L}×${W}"`, sf:L*W/144, th:fPT});
+    // bottom deckboards run across the width, like the top deck
+    deckBom("Bottom deck",bot.iv,bT,W);
+    if(bk==="stringer"){
+      bom.push({q:bp.sC, d:`Stringer ${bp.sB}×${bp.sH}×${L}"${bp.notch?` · notched 2× ${bp.notchL}×${bp.notchD}"`:""}`, bf:bp.sC*bp.sB*bp.sH*L/144});
+    }else{
+      if(bp.sbOn) bom.push({q:bp.sbC, d:`Stringer board ${bp.sbT}×${bp.sbW}×${L}"`, bf:bp.sbC*bp.sbT*bp.sbW*L/144});
+      bom.push({q:bp.nBlk, d:`Block ${bp.k}×${bp.k}×${bp.kH}"`, bf:bp.nBlk*bp.k*bp.k*bp.kH/144});
+    }
+    // plywood (ft², not BF)
+    bom.push({q:2, d:`Side panel ${pT}" ply · ${L}×${pHS.toFixed(2)}"`, sf:2*L*pHS/144, th:pT});
+    bom.push({q:2, d:`End panel ${pT}" ply · ${eW.toFixed(2)}×${pHE.toFixed(2)}"`, sf:2*eW*pHE/144, th:pT});
+    // cleat frame
+    const cleat=(q,len,what,tail="")=>piece(q, `${what} ${ct}×${cw}×${len.toFixed(2)}"${tail}`, q*ct*cw*len/144);
+    if(orient==="v"){
+      bom.push({q:2*2, d:`Rail cleat ${ct}×${cw}×${L}"`, bf:4*ct*cw*L/144});
+      bom.push({q:2*2, d:`Rail cleat ${ct}×${cw}×${eW.toFixed(2)}"`, bf:4*ct*cw*eW/144});
+      cleat(2*nVL, pHS-2*cw, "Vertical cleat");          // verticals fit between the rails
+      cleat(2*nVW, pHE-2*cw, "Vertical cleat");
+    }else{
+      cleat(4, pHS, "Edge cleat", " vert");               // 2 upright edge cleats on each of the 4 panels
+      cleat(4, pHE, "Edge cleat", " vert");
+      const hL=L-2*cw, hW=eW-2*cw;                        // horizontals fit between the edge cleats
+      bom.push({q:2*nHS, d:`Horizontal cleat ${ct}×${cw}×${hL.toFixed(2)}"`, bf:2*nHS*ct*cw*hL/144});
+      bom.push({q:2*nHE, d:`Horizontal cleat ${ct}×${cw}×${hW.toFixed(2)}"`, bf:2*nHE*ct*cw*hW/144});
+    }
+    if(lid){
+      bom.push({q:1, d:`Lid panel ${pT}" ply · ${L}×${W}"`, sf:L*W/144, th:pT});
+      bom.push({q:2, d:`Lid cleat ${ct}×${cw}×${W.toFixed(2)}"`, bf:2*ct*cw*W/144});
+    }
+    const baseNails = bk==="stringer"
+      ? dC*bp.sC*2 + bCe*bp.sC*2
+      : (bp.sbOn ? dC*bp.sbC*2 + bp.sbC*bp.nBlk : dC*bp.nBlk*2) + bCe*bp.nBlk + bp.nBlk*2;
+    var nails = baseNails + Math.round((2*(L+pHS)*2 + 2*(eW+pHE)*2)/6) + (lid?Math.round(2*(L+W)/6):0);
+    if(attach==="skirt"){
+      nails += Math.round(((lapS>0?2*L:0)+(lapE>0?2*eW:0))/4);   // horizontal skirt nailing @ ~4″ o.c. on each face that laps
+    }else{
+      var lags = (bk==="stringer" ? 2*bp.sC : 2*bp.nBL) + 4;   // lags down into stringers / block columns
+    }
+  } else if(palletType==="stringer"){
+    const sC=Math.max(2,Math.round(V("sCount"))), sB=V("sThk"), sH=V("sHgt");
+    const notch = $("sNotch").value==="1";
+    const y0 = bC>0 ? bT : 0;
+    H = y0+sH+dT;
+    const ng=notchGeom(L,sH,notch);
+    const bot=bottomBoards(bC,bLead,bW,L,{kind:"stringer",notch,...ng},bLay);
+    p={type:"stringer",dC,dW,dLead,dT,dSum,topIv,bC,bW,bLead,bT,botIv:bot.iv,botMode:bot.mode,botNoFit:bot.noFit,
+       sC,sB,sH,notch,y0,...ng};
+    deckBom("Top deck",topIv,dT,W);
+    // bottom deckboards run across the width, like the top deck
+    deckBom("Bottom deck",bot.iv,bT,W);
+    bom.push({q:sC, d:`Stringer ${sB}×${sH}×${L}"${notch?` · notched 2× ${p.notchL}×${p.notchD}"`:""}`, bf:sC*sB*sH*L/144});
+    var nails = dC*sC*2 + bC*sC*2;
+  } else {
+    // BLOCK pallet
+    const k=V("kSize"), kH=V("kHgt");
+    const sbOn=$("kSBon").value==="1";
+    const nBL=Math.max(2,Math.round(V("kNL"))), nBW=Math.max(2,Math.round(V("kNW")));
+    const sbC=sbOn?nBW:0, sbT=sbOn?V("kSBt"):0, sbW=V("kSBw");   // one stringer board per block row
+    const nBlk=nBL*nBW;
+    const bCb = bC>0 ? nBL : 0;          // bottom boards sit under the block columns
+    const y0 = bCb>0 ? bT : 0;
+    H = y0+kH+sbT+dT;
+    const bot=bottomBoards(bCb,bLead,bW,L,{kind:"block",nBL,k},bLay);
+    p={type:"block",dC,dW,dLead,dT,dSum,topIv,bC:bCb,bW,bLead,bT,botIv:bot.iv,botMode:bot.mode,
+       k,kH,sbC,sbT,sbW,sbOn,nBL,nBW,y0};
+    deckBom("Top deck",topIv,dT,W);
+    deckBom("Bottom deck",bot.iv,bT,W);
+    if(sbOn) bom.push({q:sbC, d:`Stringer board ${sbT}×${sbW}×${L}"`, bf:sbC*sbT*sbW*L/144});
+    bom.push({q:nBlk, d:`Block ${k}×${k}×${kH}"`, bf:nBlk*k*k*kH/144});
+    var nails = sbOn ? dC*sbC*2 + sbC*nBlk + bCb*nBlk + nBlk*2
+                     : dC*nBlk*2 + bCb*nBlk + nBlk*2;
+  }
+  const totBF = bom.reduce((a,b)=>a+(b.bf||0),0);
+  const totSF = bom.reduce((a,b)=>a+(b.sf||0),0);
+  // sheets and plywood weight are per thickness — mixing 3/8" walls with a 1/2" floor
+  // in one total would misprice the sheets and understate the weight
+  const byTh={};
+  bom.forEach(b=>{ if(b.sf) byTh[b.th]=(byTh[b.th]||0)+b.sf; });
+  const sheetList=Object.entries(byTh).map(([th,sf])=>({th:+th, n:Math.ceil(sf*1.1/32)}));
+  const sheets = sheetList.reduce((a,s)=>a+s.n,0);
+  const sheetTxt = sheetList.map(s=>`${s.n}× ${s.th}"`).join(" + ");
+  const plyWt = Object.entries(byTh).reduce((a,[th,sf])=>a+sf*(+th)/12*36,0);  // ply ≈ 36 lb/ft³
+  const den = SPECIES[spSel.value]?SPECIES[spSel.value].den:30;
+  const weight = totBF/12*den + plyWt;
+  const m={bom,totBF,totSF,sheets,sheetTxt,nails,lags:(typeof lags!=="undefined"?lags:0),weight,H,L,W,p};
+  m.det=palletDetails(m);      // gaps, spacing and fork openings — shared by the panel, the drawing and the print
+  return m;
+}
+
+/* ================= STRUCTURAL ANALYSIS (simplified beam theory) ================= */
+/* Uniformly loaded, simply supported: Wcap_strength = 8·Fb·S / Lspan ; δ = 5·W·L³ /(384·E·I) */
+const PLY={Fb:1400,E:1100000};   // approx. sheathing-grade plywood, face-grain bending
+function comboBeam(parts,span,defLim,SF){
+  // parallel members estimate: capacities add, non-composite
+  if(!parts.length) return {cap:0,gov:"no floor",defl:0};
+  let cap=0,defl=0,gov="strength",best=0;
+  for(const q of parts){
+    const r=beamCap(q.Fb,q.E,SF,q.S,q.I,span,defLim);
+    cap+=r.cap; defl=Math.max(defl,r.defl);
+    if(r.cap>best){best=r.cap;gov=r.gov;}
+  }
+  return {cap,gov,defl};
+}
+function beamCap(Fb,E,SF,S,I,span,defLim){
+  if(S<=0||I<=0) return {cap:0,gov:"no member spans this way",defl:0};
+  if(span<=1) return {cap:1e9,gov:"-",defl:0};
+  const Wstr = 8*Fb*S/span/SF;
+  const Wdef = defLim*384*E*I/(5*Math.pow(span,3));
+  const cap = Math.min(Wstr,Wdef);
+  const defl = 5*cap*Math.pow(span,3)/(384*E*I);
+  return {cap, gov: Wstr<Wdef?"strength":"deflection", defl};
+}
+
+function analyze(m){
+  const Fb=V("Fb"), E=V("E"), SF=Math.max(1,V("SF"));
+  const dpc=V("defPct")/100, br=V("bearing"), fs=V("forkSp");
+  const L=m.L, W=m.W;
+  // deck strength comes from the total width of the boards (end boards may be wider than the rest)
+  const dC=m.p.dC, dT=m.p.dT, dSum=m.p.dSum;
+  const deckTxt = Math.abs(m.p.dLead-m.p.dW)<1e-9 ? `${dC} deckboards ${dT}×${m.p.dW}`
+                : `${dC} deckboards ${dT} thick (2×${m.p.dLead} + ${dC-2}×${m.p.dW})`;
+
+  // base kind: for a box this is whichever base was selected
+  const bk = m.p.base || m.p.type;
+  const isBox = palletType==="box";
+  const hasB = !isBox || m.p.hasB, hasP = isBox && m.p.hasP, fPT = isBox ? m.p.fPT : 0;
+
+  // -- spanning members along L --
+  let S_L=0, I_L=0, memberL="";
+  if(bk==="stringer"){
+    const sC=m.p.sC, b=m.p.sB, h=m.p.sH;
+    S_L = sC*b*h*h/6;  I_L = sC*b*h*h*h/12;
+    memberL = sC+" stringers "+b+"×"+h;
+  }else{
+    // Only members that actually RUN along L count here. Deckboards run across W,
+    // so they carry nothing in this direction — a plywood floor does (it spans both ways).
+    const sbC=m.p.sbC||0, b=m.p.sbW||0, h=m.p.sbT||0;
+    const parts=[];
+    if(sbC>0){ S_L += sbC*b*h*h/6;  I_L += sbC*b*h*h*h/12;  parts.push(sbC+" stringer boards"); }
+    if(hasP) { S_L += W*fPT*fPT/6;  I_L += W*fPT*fPT*fPT/12; parts.push(fPT+'" ply floor'); }
+    memberL = parts.length ? parts.join(" + ")+" (non-composite)"
+                           : "no lengthwise member — deck bears direct on blocks";
+  }
+
+  // 1) RACKED — LONG SPAN (supported on rack rails across width, members span L)
+  const spanL = L-2*br;
+  let rL = beamCap(Fb,E,SF,S_L,I_L,spanL,dpc*spanL);
+  // notched stringers: the notch leaves only (h − notch depth) of wood, and it sits well inside
+  // the span — check bending at the net section of the notch point nearest mid-span
+  if(bk==="stringer" && m.p.notch && m.p.notchL>0){
+    const p=m.p, hn=p.sH-p.notchD;
+    const g=X=>Math.max(0,(X-br)*(L-br-X)/2);           // moment per unit of uniform load, X from the pallet end
+    const gN=Math.max(0,...p.notchX.map(a=>g(Math.min(Math.max(L/2,a),a+p.notchL))));
+    if(hn<=0) rL={cap:0, gov:"notch cuts through the stringer", defl:0};
+    else if(gN>0){
+      const Sn=p.sC*p.sB*hn*hn/6;
+      const Wn=Fb*Sn*spanL/(SF*gN);                        // total load that stresses the notch to Fb/SF
+      if(Wn<rL.cap) rL={cap:Wn, gov:"strength at notch", defl:5*Wn*Math.pow(spanL,3)/(384*E*I_L)};
+    }
+  }
+
+  // 2) RACKED — SHORT SPAN (floor spans W)
+  const spanW = W-2*br;
+  const partsW=[];
+  if(hasB) partsW.push({Fb,E, S:dSum*dT*dT/6, I:dSum*dT*dT*dT/12});
+  if(hasP) partsW.push({Fb:PLY.Fb,E:PLY.E, S:L*fPT*fPT/6, I:L*fPT*fPT*fPT/12});
+  const rW = comboBeam(partsW,spanW,dpc*spanW,SF);
+  const noteW = (hasB? deckTxt : "") + (hasB&&hasP?" + ":"") + (hasP? fPT+'" ply floor':"");
+
+  // 3) FLOOR STACKED — deck bending between supports
+  let clearSpan, nSpans;
+  if(bk==="stringer"){
+    const sC=m.p.sC, b=m.p.sB;
+    clearSpan = (W - sC*b)/(sC-1); nSpans=sC-1;
+  }else if(m.p.sbC>0){
+    clearSpan = (W - m.p.sbC*m.p.sbW)/(m.p.sbC-1); nSpans=m.p.sbC-1;
+  }else{
+    // deck nailed straight to the blocks — it spans between block rows across W
+    clearSpan = (W - m.p.nBW*m.p.k)/(m.p.nBW-1); nSpans=m.p.nBW-1;
+  }
+  // each span carries its share; total = per-span cap × nSpans
+  const parts1=[];
+  if(hasB) parts1.push({Fb,E, S:dSum*dT*dT/6, I:dSum*dT*dT*dT/12});
+  if(hasP) parts1.push({Fb:PLY.Fb,E:PLY.E, S:L*fPT*fPT/6, I:L*fPT*fPT*fPT/12});
+  const fRaw = comboBeam(parts1,Math.max(clearSpan,1),dpc*Math.max(clearSpan,1),SF);
+  const fl = {cap:fRaw.cap*nSpans, gov:fRaw.gov, defl:fRaw.defl, span:clearSpan};
+
+  // 4) FORK SUPPORT — members along L spanning fork tines
+  const rF = beamCap(Fb,E,SF,S_L,I_L,fs,dpc*fs);
+
+  const modes=[
+      {k:"racked-L", t:"RACKED — LONG SPAN "+spanL.toFixed(0)+'"', ...rL, note:memberL},
+      {k:"racked-W", t:"RACKED — SHORT SPAN "+spanW.toFixed(0)+'"', ...rW, note:noteW},
+      {k:"floor",    t:"FLOOR STACKED", cap:fl.cap, gov:fl.gov, defl:fl.defl, note:"deck between supports, "+fl.span.toFixed(1)+'" clear × '+nSpans+" spans"},
+      {k:"fork",     t:"FORK SUPPORT @ "+fs+'"', ...rF, note:memberL},
+  ];
+  if(palletType==="box"){
+    const Fc=V("Fc"), p=m.p;
+    const nV=2*p.nVL+2*p.nVW;
+    const A=nV*p.ct*p.cw;
+    modes.push({k:"stack", t:"STACKING — VERTICAL CLEATS", cap:Fc*A/SF,
+      gov:"compression", defl:0, note:nV+" cleats "+p.ct+"×"+p.cw+'" · Fc '+Fc+" psi · panels not counted"});
+  }
+  return { memberL, modes };
+}
+
+/* ================= PALLET DETAILS — plank gaps, spacing, fork openings ================= */
+// Members spread evenly with both end members flush to the edge — the same rule the drawing uses.
+function spacing(n,w,span){
+  const cc = n>1 ? (span-w)/(n-1) : 0;
+  return {n, w, span, cc, gap: n>1 ? cc-w : 0, cov: Math.min(1, n*w/span), over: n*w > span+0.01};
+}
+// longest stretch of [a,b] that none of the intervals covers
+function clearRun(a,b,ivs){
+  let segs=[[a,b]];
+  ivs.forEach(([u,v])=>{
+    segs=segs.flatMap(([s,e])=> (v<=s||u>=e) ? [[s,e]]
+      : [[s,Math.min(e,u)],[Math.max(s,v),e]].filter(q=>q[1]-q[0]>1e-6));
+  });
+  return segs.reduce((mx,q)=>Math.max(mx,q[1]-q[0]),0);
+}
+function palletDetails(m){
+  const p=m.p, L=m.L, W=m.W, isBox=p.type==="box", bk=p.base||p.type;
+  const groups=[], warn=[];
+  const G=t=>{ const g={title:t,items:[]}; groups.push(g); return g; };
+  const pct=v=>Math.round(Math.round(v*1e6)/1e4)+"%";
+  const lapMax=v=>inch(Math.floor(Math.max(0,v)*16)/16);   // round down — a lap must never reach the opening
+  const size=(...a)=>a.map(v=>inch(v).slice(0,-1)).join(" × ")+"″";   // 0.75 × 5.5 × 40″
+  const count=(n,one,many)=>`${n} ${n===1?one:many}`;
+  const gC=G("CONFIGURATION");                    // filled last: the entry type depends on the openings
+
+  // ---- decks: board sizes, gaps between boards, centre-to-centre, coverage ----
+  // read from the real board positions, so wider end boards and grouped bottom boards come out right
+  const deckStats=iv=>{
+    const widths=iv.map(([a,b])=>b-a), gaps=[];
+    for(let i=1;i<iv.length;i++) gaps.push(iv[i][0]-iv[i-1][1]);
+    const sum=Math.round(widths.reduce((a,b)=>a+b,0)*1e6)/1e6;
+    return {n:iv.length, widths, gaps, sum, cov:Math.min(1,sum/L),
+            over: gaps.some(g=>g<-0.01) || sum>L+0.01,
+            even: gaps.every(g=>Math.abs(g-gaps[0])<1/32)};
+  };
+  const deckRows=(g,iv,t,what,notes={})=>{
+    const s=deckStats(iv);
+    if(s.over) warn.push(`${what}: ${s.n} boards need ${inch(s.sum)}, the pallet is ${inch(L)}`);
+    const wE=s.widths[0], wI=s.n>2 ? s.widths[1] : wE, mixed=Math.abs(wE-wI)>1e-6;
+    if(mixed){
+      g.items.push({k:"2 end boards", v:size(t,wE,W)});
+      g.items.push({k:count(s.n-2,"inner board","inner boards"), v:size(t,wI,W), note:notes.inner});
+    } else g.items.push({k:count(s.n,"board","boards"), v:size(t,wE,W), note:notes.all||notes.inner});
+    if(s.n>1){
+      if(s.over) g.items.push({k:"Gap between boards", v:"overlap", bad:true});
+      else if(s.even){
+        g.items.push({k:"Gap between boards", v:inch(s.gaps[0])});
+        if(!mixed) g.items.push({k:"Center to center", v:inch(s.gaps[0]+wE)});
+        else if(s.n>3) g.items.push({k:"C-C, inner boards", v:inch(s.gaps[0]+wI)});
+      } else g.items.push({k:"Gaps, end to end", v:s.gaps.map(inch).join(" · ")});
+    }
+    g.items.push({k:"Coverage", v:pct(s.cov)});
+    return s;
+  };
+  const gT=G(isBox?"BOX FLOOR":"TOP DECK");
+  let top=null, bot=null;
+  if(!isBox || p.hasB) top=deckRows(gT,p.topIv,p.dT,isBox?"floor deck":"top deck");
+  if(isBox && p.hasP) gT.items.push({k:"Plywood floor", v:inch(p.fPT)+" sheet",
+    note:p.hasB?"over the deckboards — no gaps":"continuous — no gaps"});
+  const gB=G("BOTTOM DECK");
+  if(p.bC>0) bot=deckRows(gB,p.botIv,p.bT,"bottom deck",
+      p.botMode==="columns" ? {all:"one under each block column", inner:"centred under the inner block columns"}
+    : p.botMode==="columns-even" ? {all:"one per block column, equal gaps", inner:"equal gaps — too wide to centre under the blocks"}
+    : p.botMode==="notch"   ? {inner:"grouped between the notches"} : {});
+  else gB.items.push({k:"Boards", v:"None", note:"single-face"});
+  if(p.botNoFit) warn.push(`bottom deck: ${p.botNoFit.k} inner boards need ${inch(p.botNoFit.need)} between the notches, only ${inch(p.botNoFit.room)} there — spaced evenly instead`);
+  const botIv = p.botIv;
+
+  // ---- structure under the deck, and the fork openings it leaves ----
+  // an opening is n × width, from `bottom` to `top` (inches above the floor). On a skirted box the
+  // panel lap can cut into it: the ends use the end-panel lap, the sides the side-panel lap.
+  const skirt = isBox && p.attach==="skirt";
+  const open=(n,width,bottom,top,lap)=>{
+    const t=Math.min(top, skirt ? p.baseH-lap : Infinity);
+    return {n,width,bottom,top,h:Math.max(0,t-bottom),hBase:top-bottom,skirt:t<top-1e-6};
+  };
+  let f40, f48=null;
+  if(bk==="stringer"){
+    const s=spacing(p.sC,p.sB,W), g=G("STRINGERS");
+    if(s.over) warn.push(`stringers: ${s.n}×${inch(s.w)} exceeds ${inch(W)}`);
+    g.items.push({k:count(s.n,"stringer","stringers"), v:size(p.sB,p.sH,L)});
+    g.items.push({k:"Center to center", v:inch(s.cc)});
+    g.items.push({k:"Clear between", v:s.over?"overlap":inch(s.gap), bad:s.over});
+    f40=open(p.sC-1, s.gap, p.y0, p.y0+p.sH, p.lapE);
+    if(p.notch){
+      const nx=p.notchX;
+      if(nx[0]+p.notchL>nx[1]) warn.push(`notches overlap on a ${inch(L)} stringer`);
+      if(p.notchD>=p.sH) warn.push(`notch depth ${inch(p.notchD)} cuts through the ${inch(p.sH)} stringer`);
+      g.items.push({k:"2 notches each", v:`${inch(p.notchL)} long × ${inch(p.notchD)} deep`});
+      g.items.push({k:"Notch position", v:`${inch(nx[0])} from each end`});
+      g.items.push({k:"Wood left at notch", v:inch(Math.max(0,p.sH-p.notchD)), bad:p.notchD>=p.sH});
+      // a bottom deckboard inside the notch leaves the forks only the notch depth above it
+      const clr=Math.min(...nx.map(x=>clearRun(x,x+p.notchL,botIv)));
+      const under=clr<p.notchL-1e-6;
+      f48=open(2, p.notchL, under?p.y0:0, p.y0+p.notchD, p.lapS);
+      Object.assign(f48,{notch:true, under, floorClear:clr});
+      if(under) warn.push(`bottom board under a notch — side fork entry only ${inch(f48.hBase)} high over the board`);
+    }
+  }else{
+    const sL=spacing(p.nBL,p.k,L), sW=spacing(p.nBW,p.k,W), g=G("BLOCKS");
+    if(sL.over) warn.push(`blocks along length: ${sL.n}×${inch(p.k)} exceeds ${inch(L)}`);
+    if(sW.over) warn.push(`blocks along width: ${sW.n}×${inch(p.k)} exceeds ${inch(W)}`);
+    g.items.push({k:count(p.nBL*p.nBW,"block","blocks"), v:size(p.k,p.k,p.kH),
+      note:`${p.nBL} along length × ${p.nBW} along width`});
+    g.items.push({k:"Clear along length", v:sL.over?"overlap":inch(sL.gap), bad:sL.over});
+    g.items.push({k:"C-C along length",   v:inch(sL.cc)});
+    g.items.push({k:"Clear along width",  v:sW.over?"overlap":inch(sW.gap), bad:sW.over});
+    g.items.push({k:"C-C along width",    v:inch(sW.cc)});
+    let wEnd=sW.gap;
+    if(p.sbC>0){
+      g.items.push({k:count(p.sbC,"stringer board","stringer boards"), v:size(p.sbT,p.sbW,L), note:"one on each block row"});
+      wEnd=Math.min(wEnd, spacing(p.sbC,p.sbW,W).gap);
+    } else g.items.push({k:"Stringer boards", v:"None", note:"deck nailed straight to the blocks"});
+    f40=open(p.nBW-1, wEnd, p.y0, p.y0+p.kH+p.sbT, p.lapE);
+    f48=open(p.nBL-1, sL.gap, 0, p.y0+p.kH, p.lapS);
+    if(bot){          // bottom boards are wider than the blocks, so the slot is narrower right at the floor
+      const xs=spread(p.nBL,L,p.k), fw=clearRun(xs[0]+p.k/2, xs[1]-p.k/2, botIv);
+      if(fw<sL.gap-1e-6) f48.floorW=fw;
+    }
+  }
+
+  // ---- fork entry, per face ----
+  const gF=G("FORK ENTRY");
+  const face=(k,f,panel)=>{
+    if(!f){ gF.items.push({k, v:"None", note:"stringers are not notched"}); return; }
+    if(f.h<=0.01){ gF.items.push({k, v:"Blocked", bad:true, note:`${panel} lap covers the openings`}); return; }
+    let note = f.notch ? (f.under ? `bottom board under the notch — only ${inch(f.floorClear)} of ${inch(f.width)} clear at the floor`
+                                  : "through the notches, from the floor")
+                       : (f.bottom>0 ? "over the bottom deck" : "from the floor");
+    if(f.floorW!=null) note+=` · ${inch(f.floorW)} wide between the bottom boards`;
+    if(f.skirt) note=`${panel} lap cuts it from ${inch(f.hBase)} high · `+note;
+    gF.items.push({k, v:`${f.n} × ${inch(f.width)} W × ${inch(f.h)} H`, bad:!!(f.skirt||f.under), note});
+  };
+  face(`Ends · ${inch(W)} face`, f40, "End-panel");
+  face(`Sides · ${inch(L)} face`, f48, "Side-panel");
+  if(skirt){
+    if(f40.skirt) warn.push(`end-panel lap covers the end fork openings — an end lap ≤ ${lapMax(p.baseH-f40.top)} keeps them clear`);
+    if(f48 && f48.skirt) warn.push(`side-panel lap covers the side fork openings — a side lap ≤ ${lapMax(p.baseH-f48.top)} keeps them clear`);
+  }
+
+  // ---- configuration ----
+  const use40 = f40.h>0.01 && !f40.skirt;
+  const use48 = !!f48 && f48.h>0.01 && !f48.skirt && !f48.under;
+  const entry = use40&&use48 ? (bk==="block"?"4-way":"Partial 4-way (notched)")
+              : use40 ? (f48?"2-way — side entry restricted":"2-way")
+              : use48 ? "2-way — sides only" : "None — openings covered";
+  gC.items.push({k:"Class", v: isBox?`Pallet box · ${bk} base`:(bk==="stringer"?"Stringer pallet":"Block pallet")});
+  gC.items.push({k:"Fork entry", v:entry, bad:!(use40||use48) || (!!f48 && !use48)});
+  if(!isBox) gC.items.push({k:"Faces", v: !bot ? "Single-face"
+      : (p.bT===p.dT && p.botIv.length===p.topIv.length && p.botIv.every((b,i)=>{ const t=p.topIv[i];
+            return Math.abs((b[1]-b[0])-(t[1]-t[0]))<1e-6 && Math.abs(b[0]-t[0])<0.5; })
+          ? "Double-face, reversible" : "Double-face, non-reversible")});
+  return {title:isBox?"BASE & FLOOR DETAILS":"PALLET DETAILS", groups, warn, top, bot, f40, f48, entry};
+}
+
+function renderDetails(det){
+  $("detTitle").textContent=det.title;
+  $("det").innerHTML=det.groups.map(g=>
+    `<tr class="gh"><td colspan="2">${g.title}</td></tr>`+
+    g.items.map(it=>`<tr><td>${it.k}</td><td${it.bad?' class="bad"':''}>${it.v}${it.note?`<small>${it.note}</small>`:""}</td></tr>`).join("")
+  ).join("");
+}
+
+/* ================= RENDER: RESULTS ================= */
+const fmtLb = n => n>=99999 ? ">99,999" : Math.round(n).toLocaleString();
+function renderResults(m,a){
+  const gov = a.modes.reduce((min,x)=>x.cap<min.cap?x:min, a.modes[0]);
+  $("cards").innerHTML = a.modes.map(x=>`
+    <div class="card ${x===gov?'govern':''}">
+      <div class="ct"><h3>${x.t}</h3></div>
+      <div class="cap ${x.cap<1500?'mid':''}">${fmtLb(x.cap)} <small>lb</small></div>
+      <div class="sub"><b>${x.note}</b><br>${x.k==="stack" ? "short-column crush basis · braced by walls" : `limited by ${x.gov} · δ ≈ ${x.defl.toFixed(2)}" at rated load`}</div>
+    </div>`).join("");
+  return gov;
+}
+
+function renderBOM(m){
+  const rows = m.bom.map(b=>`<tr><td>${b.q}×</td><td>${b.d}</td><td>${b.sf!=null? b.sf.toFixed(1)+" ft²" : b.bf.toFixed(2)+" BF"}</td></tr>`).join("");
+  $("bom").innerHTML = rows +
+    `<tr class="tt"><td></td><td>Total lumber</td><td>${m.totBF.toFixed(2)} BF</td></tr>` +
+    (m.totSF>0?`<tr class="tt"><td></td><td>Total plywood</td><td>${m.totSF.toFixed(1)} ft² ≈ ${m.sheetTxt} (4×8)</td></tr>`:"") +
+    `<tr class="tt"><td></td><td>Fasteners est. / weight est.</td><td>${m.nails} nails${m.lags?` · ${m.lags} lags 5/16×3"`:""} · ${m.weight.toFixed(0)} lb</td></tr>`;
+}
+
+/* ================= 2D SPEC DRAWING ================= */
+const PAL_SCREEN={bg:null, line:"#b9c4d0", fill:"rgba(202,160,106,.16)", fill2:"rgba(202,160,106,.30)",
+                  hid:"#6d7683", dim:"#e8a33d", txt:"#e8a33d", lab:"#5b616b"};
+const PAL_PAPER ={bg:"#ffffff", line:"#1a1a1a", fill:"rgba(190,150,90,.22)", fill2:"rgba(190,150,90,.40)",
+                  hid:"#8a8a8a", dim:"#8a5510", txt:"#8a5510", lab:"#666666"};
+
+function drawSpec2D(c2,w,h,m,pal,inset=0){   // inset: room kept clear at the top (screen header label)
+  const p=m.p, L=m.L, W=m.W, H=m.H;
+  const bk = p.base || p.type;      // a box carries its own base kind
+  c2.clearRect(0,0,w,h);
+  if(pal.bg){ c2.fillStyle=pal.bg; c2.fillRect(0,0,w,h); }
+  c2.lineWidth=1; c2.font="10px 'JetBrains Mono',monospace";
+
+  /* ---- helpers ---- */
+  const R=(x,y,dw,dh,fill)=>{ c2.fillStyle=fill; c2.fillRect(x,y,dw,dh);
+    c2.strokeStyle=pal.line; c2.strokeRect(x,y,dw,dh); };
+  const dashRect=(x,y,dw,dh)=>{ c2.save(); c2.setLineDash([4,3]); c2.strokeStyle=pal.hid;
+    c2.strokeRect(x,y,dw,dh); c2.restore(); };
+  const dashLine=(x1,y1,x2,y2)=>{ c2.save(); c2.setLineDash([4,3]); c2.strokeStyle=pal.hid;
+    c2.beginPath(); c2.moveTo(x1,y1); c2.lineTo(x2,y2); c2.stroke(); c2.restore(); };
+  const arrow=(x,y,dir)=>{ // dir: 0=left 1=right 2=up 3=down
+    c2.beginPath();
+    if(dir===0){c2.moveTo(x,y);c2.lineTo(x+6,y-2.6);c2.lineTo(x+6,y+2.6);}
+    if(dir===1){c2.moveTo(x,y);c2.lineTo(x-6,y-2.6);c2.lineTo(x-6,y+2.6);}
+    if(dir===2){c2.moveTo(x,y);c2.lineTo(x-2.6,y+6);c2.lineTo(x+2.6,y+6);}
+    if(dir===3){c2.moveTo(x,y);c2.lineTo(x-2.6,y-6);c2.lineTo(x+2.6,y-6);}
+    c2.closePath(); c2.fillStyle=pal.dim; c2.fill(); };
+  // dimension lines: extension lines run from the feature to just past the dimension line;
+  // a gap too narrow for two arrows gets them outside, pointing in
+  const dimH=(x1,x2,y,label,ext1,ext2)=>{
+    c2.strokeStyle=pal.dim;
+    c2.beginPath();
+    const tick=(x,e)=>{ if(e==null) return; c2.moveTo(x,e); c2.lineTo(x, y+(y>e?3:-3)); };
+    tick(x1,ext1); tick(x2,ext2);
+    const small = x2-x1 < 14;
+    c2.moveTo(small?x1-10:x1,y); c2.lineTo(small?x2+10:x2,y);
+    c2.stroke();
+    if(small){ arrow(x1,y,1); arrow(x2,y,0); } else { arrow(x1,y,0); arrow(x2,y,1); }
+    c2.fillStyle=pal.txt; c2.textAlign="center"; c2.textBaseline="bottom";
+    c2.fillText(label,(x1+x2)/2,y-3);
+  };
+  const dimV=(y1,y2,x,label,ext1,ext2)=>{
+    c2.strokeStyle=pal.dim;
+    c2.beginPath();
+    const tick=(yy,e)=>{ if(e==null) return; c2.moveTo(e,yy); c2.lineTo(x+(x>e?3:-3), yy); };
+    tick(y1,ext1); tick(y2,ext2);
+    const small = y2-y1 < 14;
+    c2.moveTo(x,small?y1-10:y1); c2.lineTo(x,small?y2+10:y2);
+    c2.stroke();
+    if(small){ arrow(x,y1,3); arrow(x,y2,2); } else { arrow(x,y1,2); arrow(x,y2,3); }
+    c2.save(); c2.translate(x-4,(y1+y2)/2); c2.rotate(-Math.PI/2);
+    c2.fillStyle=pal.txt; c2.textAlign="center"; c2.textBaseline="bottom";
+    c2.fillText(label,0,0); c2.restore();
+  };
+  // two-line callout centred inside an opening; skipped when the opening is too small to hold it
+  const note=(cx,cy,head,val,maxW,maxH)=>{
+    c2.font="10px 'JetBrains Mono',monospace";
+    const tw=Math.max(c2.measureText(head).width, c2.measureText(val).width);
+    if(tw+8>maxW || maxH<26) return;
+    c2.textAlign="center"; c2.textBaseline="middle";
+    c2.fillStyle=pal.lab; c2.fillText(head,cx,cy-6);
+    c2.fillStyle=pal.txt; c2.fillText(val,cx,cy+6);
+  };
+  // dimensions sharing one row, drawn in priority order; one whose label would run into a label
+  // already on the row is left off rather than printed on top of it
+  const dimRow=(y,items,ext)=>{
+    c2.font="10px 'JetBrains Mono',monospace";
+    const placed=[];
+    items.forEach(it=>{
+      const w=c2.measureText(it.label).width, cx=(it.x1+it.x2)/2, a=cx-w/2-4, b=cx+w/2+4;
+      if(placed.some(([u,v])=>a<v && b>u)) return;
+      placed.push([a,b]);
+      dimH(it.x1,it.x2,y,it.label,ext,ext);
+    });
+  };
+  // board-gap dimensions for a deck: one "GAP TYP" when the gaps are equal, else each different gap
+  // once; then the end board's width, and the inner board's width when it differs
+  const deckDims=(iv,x0,sc)=>{
+    const n=iv.length, items=[], X=v=>x0+v*sc;
+    if(n<2) return items;
+    const gaps=[]; for(let i=1;i<n;i++) gaps.push([iv[i-1][1], iv[i][0]]);
+    const even=gaps.every(([a,b])=>Math.abs((b-a)-(gaps[0][1]-gaps[0][0]))<1/32);
+    if(even){ const [a,b]=gaps[n-2]; if(b-a>0.01) items.push({x1:X(a),x2:X(b),label:inch(b-a)+" GAP TYP"}); }
+    else { const seen=new Set(); gaps.forEach(([a,b])=>{ const k=inch(b-a); if(b-a>0.01 && !seen.has(k)){ seen.add(k); items.push({x1:X(a),x2:X(b),label:k+" GAP"}); } }); }
+    items.push({x1:X(iv[0][0]), x2:X(iv[0][1]), label:inch(iv[0][1]-iv[0][0])});
+    if(n>2 && Math.abs((iv[1][1]-iv[1][0])-(iv[0][1]-iv[0][0]))>1e-6)
+      items.push({x1:X(iv[1][0]), x2:X(iv[1][1]), label:inch(iv[1][1]-iv[1][0])});
+    return items;
+  };
+  const viewLabel=(x,y,t)=>{ c2.fillStyle=pal.lab; c2.textAlign="left"; c2.textBaseline="top";
+    c2.font="700 10px 'Segoe UI',sans-serif"; c2.fillText(t,x,y);
+    c2.font="10px 'JetBrains Mono',monospace"; };
+
+  /* ---- layout ---- */
+  const pad=46;
+  const topH=h*0.55;
+  // TOP VIEW
+  {
+    const rw=w-2*pad, rh=topH-2*pad-inset;
+    const sc=Math.min(rw/L, rh/W);
+    const x0=(w-L*sc)/2, y0=pad+inset+ (rh-W*sc)/2 +6;
+    viewLabel(x0,y0-34,"TOP VIEW");
+    // hidden members below deck (draw first)
+    if(bk==="stringer"){
+      spread(p.sC,W,p.sB).forEach(z=>{
+        dashLine(x0, y0+(z-p.sB/2)*sc, x0+L*sc, y0+(z-p.sB/2)*sc);
+        dashLine(x0, y0+(z+p.sB/2)*sc, x0+L*sc, y0+(z+p.sB/2)*sc);
+      });
+    }else{
+      const xs=spread(p.nBL,L,p.k), zs=spread(p.nBW,W,p.k);
+      xs.forEach(bx=>zs.forEach(bz=> dashRect(x0+(bx-p.k/2)*sc, y0+(bz-p.k/2)*sc, p.k*sc, p.k*sc)));
+      if(p.sbC>0) spread(p.sbC,W,p.sbW).forEach(z=>{
+        dashLine(x0, y0+(z-p.sbW/2)*sc, x0+L*sc, y0+(z-p.sbW/2)*sc);
+        dashLine(x0, y0+(z+p.sbW/2)*sc, x0+L*sc, y0+(z+p.sbW/2)*sc);
+      });
+    }
+    // floor / top deck
+    const tIv=p.topIv;
+    if(p.type==="box" && p.hasP){
+      R(x0, y0, L*sc, W*sc, pal.fill);            // continuous ply floor (hides boards below)
+    }else{
+      tIv.forEach(([a,b])=> R(x0+a*sc, y0, (b-a)*sc, W*sc, pal.fill));
+    }
+    // box walls overlay
+    if(p.type==="box"){
+      const t=p.sT*sc;
+      R(x0, y0, L*sc, t, pal.fill2);
+      R(x0, y0+W*sc-t, L*sc, t, pal.fill2);
+      R(x0, y0+t, t, W*sc-2*t, pal.fill2);
+      R(x0+L*sc-t, y0+t, t, W*sc-2*t, pal.fill2);
+      const cwp=p.cw*sc, ctp=p.ct*sc, out=p.edgeCl==="out";
+      // corner cleats: one on the side panel + one on the end panel at each corner
+      const X1=x0, X2=x0+L*sc, Y1=y0, Y2=y0+W*sc;
+      (out ? [
+        [X1,Y1-ctp,cwp,ctp],[X1-ctp,Y1,ctp,cwp],
+        [X2-cwp,Y1-ctp,cwp,ctp],[X2,Y1,ctp,cwp],
+        [X1,Y2,cwp,ctp],[X1-ctp,Y2-cwp,ctp,cwp],
+        [X2-cwp,Y2,cwp,ctp],[X2,Y2-cwp,ctp,cwp],
+      ] : [
+        [X1+t,Y1+t,cwp,ctp],[X1+t,Y1+t,ctp,cwp],
+        [X2-t-cwp,Y1+t,cwp,ctp],[X2-t-ctp,Y1+t,ctp,cwp],
+        [X1+t,Y2-t-ctp,cwp,ctp],[X1+t,Y2-t-cwp,ctp,cwp],
+        [X2-t-cwp,Y2-t-ctp,cwp,ctp],[X2-t-ctp,Y2-t-cwp,ctp,cwp],
+      ]).forEach(r=> R(r[0],r[1],r[2],r[3],pal.fill2));
+      c2.fillStyle=pal.txt; c2.textAlign="center"; c2.textBaseline="middle";
+      c2.fillText("INT "+inch(p.iL)+" × "+inch(p.iW)+" CLEAR", x0+L*sc/2, y0+W*sc/2);
+    }
+    // dims
+    dimH(x0, x0+L*sc, y0-16, inch(L), y0, y0);
+    dimV(y0, y0+W*sc, x0-16, inch(W), x0, x0);
+    if(p.type==="box" && p.edgeCl==="out"){
+      const e=p.ct*sc;
+      dimH(x0-e, x0+L*sc+e, y0+W*sc+22, inch(p.oL)+" EXT", y0+W*sc+e, y0+W*sc+e);
+      dimV(y0-e, y0+W*sc+e, x0-36, inch(p.oW)+" EXT", x0-e, x0-e);
+    }
+    if(p.type!=="box"){
+      const yE=y0+W*sc, n=tIv.length;
+      // row 1: gap between boards, end board width, inner board width (when different)
+      dimRow(yE+16, deckDims(tIv,x0,sc), yE);
+      // row 2: board spacing centre to centre — between two inner boards when the end boards are wider
+      if(n>1){
+        const mixed = n>2 && Math.abs((tIv[1][1]-tIv[1][0])-(tIv[0][1]-tIv[0][0]))>1e-6;
+        const i = mixed && n>3 ? 1 : 0, c=j=>(tIv[j][0]+tIv[j][1])/2;
+        if(!mixed || n>3) dimH(x0+c(i)*sc, x0+c(i+1)*sc, yE+34, inch(c(i+1)-c(i))+" C-C TYP", yE, yE);
+      }
+      // right side: spacing of the stringers / block rows under the deck
+      const zs = bk==="stringer" ? spread(p.sC,W,p.sB) : spread(p.nBW,W,p.k);
+      if(zs.length>1) dimV(y0+zs[0]*sc, y0+zs[1]*sc, x0+L*sc+18, inch(zs[1]-zs[0])+" C-C", x0+L*sc, x0+L*sc);
+    }
+  }
+
+  const botY=topH+8, botH2=h-botY;
+  const colW=w/2;
+
+  /* ---- SIDE ELEVATION (length) ---- */
+  {
+    const rw=colW-1.6*pad, rh=botH2-2*pad;
+    const sc=Math.min(rw/L, rh/Math.max(H,1)/1.0);
+    const x0=pad+ (rw-L*sc)/2, yB=botY+pad+ (rh+H*sc)/2;  // yB = ground line
+    const Y=v=> yB - v*sc;
+    viewLabel(x0,Math.max(botY+6,Y(H)-44),"SIDE ELEVATION");    // just above the view, not floating over a flat pallet
+    {
+      // ---- base ----
+      p.botIv.forEach(([a,b])=> R(x0+a*sc, Y(p.bT), (b-a)*sc, p.bT*sc, pal.fill));
+      if(bk==="stringer"){
+        // stringer profile with notches
+        const y1=Y(p.y0), y2=Y(p.y0+p.sH);
+        c2.fillStyle=pal.fill2; c2.strokeStyle=pal.line;
+        c2.beginPath();
+        if(p.notch){
+          const nD=Math.min(p.notchD,p.sH)*sc, nL=p.notchL*sc;
+          c2.moveTo(x0,y1);
+          p.notchX.forEach(nx=>{ const a=x0+nx*sc;
+            c2.lineTo(a,y1); c2.lineTo(a,y1-nD); c2.lineTo(a+nL,y1-nD); c2.lineTo(a+nL,y1); });
+          c2.lineTo(x0+L*sc,y1); c2.lineTo(x0+L*sc,y2); c2.lineTo(x0,y2); c2.closePath();
+        }else{
+          c2.rect(x0,y2,L*sc,p.sH*sc);
+        }
+        c2.fill(); c2.stroke();
+      }else{
+        spread(p.nBL,L,p.k).forEach(x=> R(x0+(x-p.k/2)*sc, Y(p.y0+p.kH), p.k*sc, p.kH*sc, pal.fill2));
+        if(p.sbC>0) R(x0, Y(p.y0+p.kH+p.sbT), L*sc, p.sbT*sc, pal.fill2);
+      }
+      // ---- floor / top deck ----
+      if(p.type==="box"){
+        let yF=p.baseTop;
+        if(p.hasB){ p.topIv.forEach(([a,b])=> R(x0+a*sc, Y(yF+p.dT), (b-a)*sc, p.dT*sc, pal.fill)); yF+=p.dT; }
+        if(p.hasP){ R(x0, Y(yF+p.fPT), L*sc, p.fPT*sc, pal.fill2); }
+      }else{
+        p.topIv.forEach(([a,b])=> R(x0+a*sc, Y(H), (b-a)*sc, p.dT*sc, pal.fill));
+      }
+      // ---- box walls: this view looks at a SIDE panel (its own lap) ----
+      if(p.type==="box"){
+        const yBot=p.baseH-p.lapS;         // side panel drops lapS below the deck top (0 on-deck)
+        // plywood panel
+        R(x0, Y(p.baseH+p.wH), L*sc, p.pHS*sc, pal.fill);
+        // cleat frame
+        if(p.orient==="v"){
+          R(x0, Y(p.baseH+p.wH), L*sc, p.cw*sc, pal.fill2);
+          R(x0, Y(yBot+p.cw), L*sc, p.cw*sc, pal.fill2);
+          spread(p.nVL, L, p.cw).forEach(x=>
+            R(x0+(x-p.cw/2)*sc, Y(p.baseH+p.wH-p.cw), p.cw*sc, (p.pHS-2*p.cw)*sc, pal.fill2));
+        }else{
+          R(x0, Y(p.baseH+p.wH), p.cw*sc, p.pHS*sc, pal.fill2);
+          R(x0+(L-p.cw)*sc, Y(p.baseH+p.wH), p.cw*sc, p.pHS*sc, pal.fill2);
+          spread(p.nHS, p.pHS, p.cw).forEach(y=>
+            R(x0+p.cw*sc, Y(yBot+y+p.cw/2), (L-2*p.cw)*sc, p.cw*sc, pal.fill2));
+        }
+        if(p.edgeCl==="out"){
+          // corner cleats of the END panels project past each end of the crate (end-panel height)
+          R(x0-p.ct*sc, Y(p.baseH+p.wH), p.ct*sc, p.pHE*sc, pal.fill2);
+          R(x0+L*sc,    Y(p.baseH+p.wH), p.ct*sc, p.pHE*sc, pal.fill2);
+        }
+        if(p.lid) R(x0, Y(H), L*sc, p.lidT*sc, pal.fill2);
+        dimV(Y(p.baseH+p.wH), Y(p.baseH), x0-16, inch(p.wH), x0, x0);
+        if(p.lapS>0) dimV(Y(p.baseH), Y(yBot), x0+L*sc+34, inch(p.lapS)+" LAP", x0+L*sc, x0+L*sc);
+      }
+    }
+    // ---- pallet details: notch position, bottom-deck gap, side fork opening ----
+    let row=18;                                  // next free dimension row under the ground line
+    if(p.type!=="box"){
+      if(bk==="stringer" && p.notch && p.notchX.length){
+        const n0=p.notchX[0], n1=n0+p.notchL, yN=Y(p.y0);
+        // chain: end → notch, then the notch; the notch label shortens if it would run into the first one
+        c2.font="10px 'JetBrains Mono',monospace";
+        const lab1=inch(n0), edge1=n0/2*sc + c2.measureText(lab1).width/2 + 6, cN=(n0+p.notchL/2)*sc;
+        const lab2=[inch(p.notchL)+" × "+inch(p.notchD)+" NOTCH", inch(p.notchL)+" NOTCH", inch(p.notchL)]
+          .find(s=>cN - c2.measureText(s).width/2 >= edge1) || inch(p.notchL);
+        dimH(x0, x0+n0*sc, yB+row, lab1, yB, yN);
+        dimH(x0+n0*sc, x0+n1*sc, yB+row, lab2, yN, yN);
+        row+=18;
+      }
+      if(p.botIv.length>=2){
+        dimRow(yB+row, deckDims(p.botIv,x0,sc), yB);   // bottom-deck gaps and board widths
+        row+=18;
+      }
+      const f=m.det.f48;
+      if(bk==="block" && f && f.h>0.01){
+        const xs=spread(p.nBL,L,p.k), a=xs[0]+p.k/2, b=xs[1]-p.k/2;
+        note(x0+(a+b)/2*sc, Y(f.bottom+f.h/2), "FORK ENTRY", inch(f.width)+" × "+inch(f.h), (b-a)*sc, f.h*sc);
+      }
+    }
+    dimH(x0, x0+L*sc, yB+row, inch(L), yB, yB);
+    if(p.type==="box" && p.edgeCl==="out")
+      dimH(x0-p.ct*sc, x0+(L+p.ct)*sc, yB+row+18, inch(p.oL)+" EXT", yB, yB);
+    dimV(Y(H), yB, x0+L*sc+18, inch(H), x0+L*sc, x0+L*sc);
+  }
+
+  /* ---- END ELEVATION (width) ---- */
+  {
+    const rw=colW-1.6*pad, rh=botH2-2*pad;
+    const sc=Math.min(rw/W, rh/Math.max(H,1));
+    const x0=colW+0.6*pad+ (rw-W*sc)/2, yB=botY+pad+ (rh+H*sc)/2;
+    const Y=v=> yB - v*sc;
+    viewLabel(x0,Math.max(botY+6,Y(H)-44),"END ELEVATION");
+    {
+      // ---- base ----
+      if(p.bC) R(x0, Y(p.bT), W*sc, p.bT*sc, pal.fill);
+      let szs=[];
+      if(bk==="stringer"){
+        szs=spread(p.sC,W,p.sB);
+        szs.forEach(z=> R(x0+(z-p.sB/2)*sc, Y(p.y0+p.sH), p.sB*sc, p.sH*sc, pal.fill2));
+      }else{
+        spread(p.nBW,W,p.k).forEach(z=> R(x0+(z-p.k/2)*sc, Y(p.y0+p.kH), p.k*sc, p.kH*sc, pal.fill2));
+        if(p.sbC>0) spread(p.sbC,W,p.sbW).forEach(z=> R(x0+(z-p.sbW/2)*sc, Y(p.y0+p.kH+p.sbT), p.sbW*sc, p.sbT*sc, pal.fill2));
+      }
+      // ---- floor / top deck ----
+      if(p.type==="box"){
+        let yF=p.baseTop;
+        if(p.hasB){ R(x0, Y(yF+p.dT), W*sc, p.dT*sc, pal.fill); yF+=p.dT; }
+        if(p.hasP){ R(x0, Y(yF+p.fPT), W*sc, p.fPT*sc, pal.fill2); }
+      }else{
+        R(x0, Y(H), W*sc, p.dT*sc, pal.fill);
+      }
+      // ---- box walls: this view looks at an END panel (its own lap) ----
+      if(p.type==="box"){
+        const eW=W-2*p.pT;
+        const yBot=p.baseH-p.lapE;
+        R(x0+p.pT*sc, Y(p.baseH+p.wH), eW*sc, p.pHE*sc, pal.fill);
+        if(p.orient==="v"){
+          R(x0+p.pT*sc, Y(p.baseH+p.wH), eW*sc, p.cw*sc, pal.fill2);
+          R(x0+p.pT*sc, Y(yBot+p.cw), eW*sc, p.cw*sc, pal.fill2);
+          spread(p.nVW, eW, p.cw).forEach(z=>
+            R(x0+(p.pT+z-p.cw/2)*sc, Y(p.baseH+p.wH-p.cw), p.cw*sc, (p.pHE-2*p.cw)*sc, pal.fill2));
+        }else{
+          R(x0+p.pT*sc, Y(p.baseH+p.wH), p.cw*sc, p.pHE*sc, pal.fill2);
+          R(x0+(W-p.pT-p.cw)*sc, Y(p.baseH+p.wH), p.cw*sc, p.pHE*sc, pal.fill2);
+          spread(p.nHE, p.pHE, p.cw).forEach(y=>
+            R(x0+(p.pT+p.cw)*sc, Y(yBot+y+p.cw/2), (eW-2*p.cw)*sc, p.cw*sc, pal.fill2));
+        }
+        if(p.edgeCl==="out"){
+          // corner cleats of the SIDE panels project past each face of the crate (side-panel height)
+          R(x0-p.ct*sc, Y(p.baseH+p.wH), p.ct*sc, p.pHS*sc, pal.fill2);
+          R(x0+W*sc,    Y(p.baseH+p.wH), p.ct*sc, p.pHS*sc, pal.fill2);
+        }
+        if(p.lid) R(x0, Y(H), W*sc, p.lidT*sc, pal.fill2);
+        if(p.lapE>0) dimV(Y(p.baseH), Y(yBot), x0+W*sc+34, inch(p.lapE)+" LAP", x0+W*sc, x0+W*sc);
+      }else{
+        if(bk==="stringer")
+          dimH(x0+(szs[0]-p.sB/2)*sc, x0+(szs[0]+p.sB/2)*sc, Y(H)-14, inch(p.sB), Y(p.y0+p.sH), Y(p.y0+p.sH));
+        // fork entry callout in the first opening between stringers / block rows
+        const f=m.det.f40;
+        if(f && f.n>0 && f.h>0.01){
+          const zs = bk==="stringer" ? spread(p.sC,W,p.sB) : spread(p.nBW,W,p.k);
+          const hw = bk==="stringer" ? p.sB/2 : p.k/2, a=zs[0]+hw, b=zs[1]-hw;
+          note(x0+(a+b)/2*sc, Y(f.bottom+f.h/2), "FORK ENTRY", inch(f.width)+" × "+inch(f.h), (b-a)*sc, f.h*sc);
+        }
+      }
+    }
+    dimH(x0, x0+W*sc, yB+18, inch(W), yB, yB);
+    if(p.type==="box" && p.edgeCl==="out")
+      dimH(x0-p.ct*sc, x0+(W+p.ct)*sc, yB+36, inch(p.oW)+" EXT", yB, yB);
+    dimV(Y(H), yB, x0+W*sc+18, inch(H), x0+W*sc, x0+W*sc);
+  }
+}
+
+function drawScreen(m){
+  const w=cv.clientWidth, h=cv.clientHeight;
+  cv.width=w*devicePixelRatio; cv.height=h*devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  drawSpec2D(ctx,w,h,m,PAL_SCREEN,18);
+}
+
+function printDrawingPNG(m){
+  // laid out at 1100×600 and rendered at 2×: dimension text comes out ~40% larger on paper
+  // than a 1500-wide layout, and the drawing takes less of the page (a pallet spec fits one Letter page)
+  const W=1100, H=600, k=2;
+  const oc=document.createElement("canvas");
+  oc.width=W*k; oc.height=H*k;
+  const c=oc.getContext("2d",{willReadFrequently:true}); c.scale(k,k);   // CPU canvas: the trim below reads pixels back
+  drawSpec2D(c,W,H,m,PAL_PAPER);
+  // trim the blank bands above and below the views (full width kept, so the drawing prints at the
+  // same scale); read in strips so only the blank band and its edge are scanned
+  try{
+    const cw=oc.width, ch=oc.height, step=32, keep=14*k;
+    const ink=(y,n)=>{ const d=c.getImageData(0,y,cw,n).data;
+      for(let r=0;r<n;r++){ for(let i=r*cw*4, e=i+cw*4; i<e; i+=4) if(d[i]<245||d[i+1]<245||d[i+2]<245) return r; }
+      return -1; };
+    let top=0, bot=ch;
+    for(let y=0; y<ch; y+=step){ const n=Math.min(step,ch-y), r=ink(y,n); if(r>=0){ top=y+r; break; } }
+    for(let y=ch; y>top; y-=step){ const n=Math.min(step,y-top), y0=y-n;
+      const d=c.getImageData(0,y0,cw,n).data; let hit=-1;
+      for(let r=n-1;r>=0 && hit<0;r--){ for(let i=r*cw*4, e=i+cw*4; i<e; i+=4) if(d[i]<245||d[i+1]<245||d[i+2]<245){ hit=r; break; } }
+      if(hit>=0){ bot=y0+hit+1; break; } }
+    top=Math.max(0,top-keep); bot=Math.min(ch,bot+keep);
+    if(bot-top>0 && bot-top<ch){
+      const t=document.createElement("canvas"); t.width=cw; t.height=bot-top;
+      t.getContext("2d").drawImage(oc,0,-top);
+      return t.toDataURL("image/png");
+    }
+  }catch(e){ /* no pixel access: print the full frame */ }
+  return oc.toDataURL("image/png");
+}
+
+/* ================= SPEC SHEET (print) ================= */
+function buildSpec(m,a,gov){
+  const d=new Date().toLocaleDateString();
+  const sp = SPECIES[spSel.value].n;
+  const client=esc($("client").value.trim()||"—"), partNo=esc($("partNo").value.trim()||"—");
+  $("spec").innerHTML = `
+    <h1>${m.p.type==="box"?"PALLET BOX":"PALLET"} SPECIFICATION</h1>
+    <div class="meta" style="font-size:12px;color:#111;margin-bottom:2px"><b>PART #: ${partNo}</b> · CLIENT: ${client}</div>
+    <div class="meta">Generated ${d} · PALLET·LAB in-house tool · ${palletType.toUpperCase()} CLASS · ${m.L}" × ${m.W}" × ${m.H.toFixed(2)}"</div>
+    <h2>CONSTRUCTION</h2>
+    <table><tr><th>Qty</th><th>Component</th><th>Board feet</th></tr>
+      ${m.bom.map(b=>`<tr><td>${b.q}</td><td>${b.d}</td><td>${b.sf!=null? b.sf.toFixed(1)+" ft²" : b.bf.toFixed(2)+" BF"}</td></tr>`).join("")}
+      <tr><td></td><td><b>Total lumber — ${sp}</b></td><td><b>${m.totBF.toFixed(2)} BF</b></td></tr>
+      ${m.totSF>0?`<tr><td></td><td><b>Total plywood (ISPM-15 exempt)</b></td><td><b>${m.totSF.toFixed(1)} ft² ≈ ${m.sheetTxt} sheets 4×8</b></td></tr>`:""}
+    </table>
+    <p style="margin-top:6px">Fasteners: ~${m.nails} nails${m.lags?` + ${m.lags} lag screws 5/16×3"`:""} · Estimated tare weight: ${m.weight.toFixed(0)} lb${
+      m.p.type==="box" ? ` · Interior clear: ${m.p.iL.toFixed(2)}″ × ${m.p.iW.toFixed(2)}″ × ${m.p.wH}″ (${((m.p.iL*m.p.iW*m.p.wH)/1728).toFixed(1)} ft³)${m.p.edgeCl==="out"?` · Exterior overall: ${m.p.oL.toFixed(2)}″ × ${m.p.oW.toFixed(2)}″ (cleats stand ${m.p.ct}″ proud of base each face)`:""}<br>Corner joint: ${m.p.edgeCl==="out"?`exterior edge cleats lapping the side-to-end joint — nailed from outside through cleat into both panels`:`interior edge cleats inside the corner — panels nailed to cleat, flush exterior`}<br>Base attachment: ${m.p.attach==="skirt"?`skirted — side panels lap ${m.p.lapS}″ and end panels lap ${m.p.lapE}″ over the base, nailed horizontally into it (fasteners in shear)`:`on-deck — bottom rails lag-screwed vertically through deck into stringers (detachable)`}` : ""}</p>
+    <h2>${m.det.title}</h2>
+    <table>${m.det.groups.map(g=>`<tr><td class="g">${g.title}</td><td class="gv">${
+      g.items.map(it=>`${it.k}: ${it.bad?`<span class="bad">${it.v}</span>`:`<b>${it.v}</b>`}${it.note?` <i>(${it.note})</i>`:""}`).join(" · ")
+    }</td></tr>`).join("")}</table>
+    <div class="keep"><h2>DRAWING</h2>
+    <img src="${printDrawingPNG(m)}" style="width:100%;border:1px solid #999"></div>
+    <div class="keep"><h2>ESTIMATED LOAD CAPACITY</h2>
+    <div class="meta" style="margin:-2px 0 4px">Dry lumber, MC ≤ 19% · Fb ${V("Fb")} psi · E ${(V("E")/1e6).toFixed(2)}×10⁶ psi · SF ${V("SF")} · δ limit ${V("defPct")}% of span</div>
+    <table><tr><th>Support condition</th><th>Est. capacity</th><th>Limited by</th></tr>
+      ${a.modes.map(x=>`<tr><td>${x.t}${x===gov?" — GOVERNS":""}</td><td>${fmtLb(x.cap)} lb</td><td>${x.gov}</td></tr>`).join("")}
+    </table>
+    <p class="note">Capacities are internal engineering estimates from simplified beam theory (uniform load, simply supported spans, single-species design values). They are not a PDS® analysis and are not valid for contractual load certification. Verify critical applications by physical test or licensed professional engineer.</p></div>`;
+}
+
+/* ================= UPDATE PIPELINE ================= */
+let toastT;
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1400);
+}
+// the print sheet (with its 2× paper drawing) is rebuilt shortly after the last edit rather than on
+// every keystroke; every way of printing flushes it first
+let specNext=null, specLast=null, specT=0, specDay="";
+function queueSpec(m,a,gov){ specNext=[m,a,gov]; clearTimeout(specT); specT=setTimeout(flushSpec,350); }
+function flushSpec(){
+  clearTimeout(specT); specT=0;
+  const day=new Date().toLocaleDateString();
+  if(specNext){ specLast=specNext; specNext=null; }
+  else if(day===specDay) return;           // sheet already current (only the date can go stale)
+  if(specLast){ specDay=day; buildSpec(...specLast); }
+}
+window.addEventListener("beforeprint", flushSpec);
+function update(msg){
+  const m=buildModel();
+  const a=analyze(m);
+  const gov=renderResults(m,a);
+  renderDetails(m.det);
+  renderBOM(m);
+  queueSpec(m,a,gov);
+  let extra="";
+  if(m.p.type==="box"){
+    const {iL,iW,oL,oW}=m.p;
+    const vol=iL*iW*m.p.wH/1728;
+    extra=` · int ${iL.toFixed(1)}″×${iW.toFixed(1)}″×${m.p.wH}″ · ${vol.toFixed(1)} ft³`;
+    if(m.p.edgeCl==="out") extra+=` · ext ${oL.toFixed(1)}″×${oW.toFixed(1)}″`;
+  }
+  // geometry and fork-entry checks come from the details; box-only checks are added here
+  const warn=[...m.det.warn];
+  if(m.p.type==="box"){
+    const over=[["side",m.p.nHS,m.p.pHS],["end",m.p.nHE,m.p.pHE]].filter(([w,n,h])=>n>1 && n*m.p.cw>h+0.01);
+    if(over.length===2 && over[0][1]===over[1][1] && Math.abs(over[0][2]-over[1][2])<1e-9)
+      warn.push(`horizontal cleats: ${over[0][1]}×${m.p.cw}″ exceeds the ${over[0][2].toFixed(1)}″ side and end panels`);
+    else over.forEach(([w,n,h])=>warn.push(`horizontal cleats: ${n}×${m.p.cw}″ exceeds the ${h.toFixed(1)}″ ${w} panel`));
+    if(m.p.iL<=0||m.p.iW<=0) warn.push("interior clear is zero or negative");
+  }
+  $("warn").innerHTML = warn.map(w=>"⚠ "+w).join("<br>");
+  $("vpDims").innerHTML =
+    `<b>${m.L}″ × ${m.W}″ × ${m.H.toFixed(2)}″</b> · ${m.totBF.toFixed(1)} BF · ${m.weight.toFixed(0)} lb tare${extra}<br>`+
+    `governing: <b>${gov.t}</b> ≈ <b>${fmtLb(gov.cap)} lb</b>`;
+  drawScreen(m);               // last: the footer text above sets how much height the drawing gets
+  if(msg) toast(msg);
+}
+
+/* ================= EVENTS ================= */
+ids.forEach(id=>$(id).addEventListener("input",()=>update()));
+["client","partNo"].forEach(id=>$(id).addEventListener("input",()=>update()));
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+$("sNotch").addEventListener("change",()=>{ syncNotchRows(); update(); });
+function syncNotchRows(){
+  const on=$("sNotch").value==="1";
+  document.querySelectorAll(".notchRow").forEach(r=>r.style.display = on ? "" : "none");
+  // the bottom-deck layout choice only matters on a notched stringer base
+  const strBase = palletType==="stringer" || (palletType==="box" && $("boxBase").value==="stringer");
+  $("rowBotLay").style.display = on && strBase ? "" : "none";
+}
+function syncSections(){
+  const t=palletType, bb=$("boxBase").value;
+  const showStr = t==="stringer" || (t==="box" && bb==="stringer");
+  const showBlk = t==="block"    || (t==="box" && bb==="block");
+  $("secStringer").style.display = showStr ? "" : "none";
+  $("secBlock").style.display    = showBlk ? "" : "none";
+  $("secBox").style.display      = t==="box" ? "" : "none";
+  syncNotchRows();
+}
+function setType(t,msg){
+  palletType=t;
+  const map={stringer:"tStr",block:"tBlk",box:"tBox"};
+  ["tStr","tBlk","tBox"].forEach(id=>$(id).classList.toggle("on",id===map[t]));
+  syncSections();
+  update(msg);
+}
+$("kSBon").addEventListener("change",()=>update(
+  $("kSBon").value==="1" ? "Stringer boards on" : "Deck nailed direct to blocks"));
+$("boxBase").addEventListener("change",()=>{
+  syncSections();
+  update($("boxBase").value==="block" ? "Box on block base" : "Box on stringer base");
+});
+$("tStr").addEventListener("click",()=>setType("stringer","Stringer class"));
+$("tBlk").addEventListener("click",()=>setType("block","Block class"));
+$("tBox").addEventListener("click",()=>setType("box","Pallet box"));
+$("boxLid").addEventListener("change",()=>update());
+$("plyT").addEventListener("change",()=>update());
+$("floorPlyT").addEventListener("change",()=>update());
+$("clOrient").addEventListener("change",()=>update());
+$("edgeCl").addEventListener("change",()=>update());
+$("floorType").addEventListener("change",()=>{
+  $("rowFloorPly").style.display = $("floorType").value==="boards" ? "none" : "";
+  update();
+});
+$("bLay").addEventListener("change",()=>update());
+function syncSkirtRows(){
+  document.querySelectorAll(".skirtRow").forEach(r=>r.style.display = $("attach").value==="skirt" ? "" : "none");
+}
+$("attach").addEventListener("change",()=>{ syncSkirtRows(); update(); });
+$("btnPresetBox").addEventListener("click",()=>{
+  const def={L:48,W:40,dCount:7,dWidth:5.5,dLead:"",dThk:0.75,bCount:5,bWidth:3.5,bLead:5.5,bThk:0.75,
+             sCount:3,sThk:1.5,sHgt:3.5,nLen:9,nDep:1.5,nEnd:8.5,wH:30,cleatT:0.75,cleatW:3.5,clSp:24,
+             sideOv:2.5,endOv:0.75};
+  for(const k in def) $(k).value=def[k];
+  $("sNotch").value="1"; $("bLay").value="notch"; $("boxLid").value="1"; $("plyT").value="0.375"; $("kSBon").value="1";
+  $("attach").value="skirt"; syncSkirtRows();
+  $("floorType").value="boards"; $("floorPlyT").value="0.5"; $("rowFloorPly").style.display="none";
+  $("clOrient").value="v"; $("edgeCl").value="in"; $("boxBase").value="stringer";
+  setType("box","Preset: Export crate 48×40×30 · 3/8″ ply · skirted");
+});
+// print once the sheet is current and its drawing decoded (a just-rebuilt image would print blank)
+function printSpec(){
+  flushSpec();
+  const img=$("spec").querySelector("img"), go=()=>window.print();
+  if(img && !img.complete && img.decode) img.decode().then(go,go); else go();
+}
+$("btnPrint").addEventListener("click",printSpec);
+$("btnReset").addEventListener("click",()=>{
+  const def={L:48,W:40,dCount:7,dWidth:3.5,dLead:5.5,dThk:0.75,bCount:5,bWidth:3.5,bLead:5.5,bThk:0.75,
+             sCount:3,sThk:1.5,sHgt:3.5,nLen:9,nDep:1.5,nEnd:8.5,kNL:3,kNW:3,kSize:3.5,kHgt:3.5,kSBt:0.75,kSBw:3.5,
+             wH:30,cleatT:0.75,cleatW:3.5,clSp:24,sideOv:2.5,endOv:0.75,
+             Fb:850,E:1100000,Fc:1310,SF:1.5,defPct:1.0,bearing:2,forkSp:24};
+  for(const k in def) $(k).value=def[k];
+  spSel.value=0; $("sNotch").value="1"; $("bLay").value="notch"; $("boxLid").value="1"; $("plyT").value="0.375"; $("kSBon").value="1";
+  $("attach").value="skirt"; syncSkirtRows();
+  $("floorType").value="boards"; $("floorPlyT").value="0.5"; $("rowFloorPly").style.display="none";
+  $("clOrient").value="v"; $("edgeCl").value="in"; $("boxBase").value="stringer";
+  syncSections();
+  update("Reset to GMA 48×40 · White Fir");
+});
+
+/* ================= SAVE / LOAD DESIGNS ================= */
+const FMT="pallet-lab/1";
+// every labelled control in the input columns — collected live so nothing is ever missed
+const ctrls = () => Array.from(document.querySelectorAll('#main input[id], #main select[id]'))
+                         .filter(el=>el.type!=="file" && el.id!=="libSel");   // the library picker isn't part of a design
+
+function collectState(){
+  const f={};
+  ctrls().forEach(el=> f[el.id]=el.value);
+  return {fmt:FMT, type:palletType, saved:new Date().toISOString(), f};
+}
+function syncRows(){
+  syncSkirtRows();
+  $("rowFloorPly").style.display = $("floorType").value==="boards" ? "none" : "";
+  syncNotchRows();
+  syncSections();
+}
+// fields older files may still carry: ignored quietly (the stringer-board count now follows the
+// block rows; the single skirt lap became separate side and end laps)
+const RETIRED=new Set(["kSB","libSel","skirtOv"]);
+// what an older file gets for a field it doesn't have, so it loads exactly as it was saved
+const MIGRATE={
+  dLead:  ()=>"",                                   // end boards the same width as the rest
+  bLead:  ()=>"",
+  bLay:   ()=>"even",                               // the bottom deck used to be spread evenly
+  sideOv: f=>"skirtOv" in f ? f.skirtOv : undefined, // one lap used to apply to all four sides
+  endOv:  f=>"skirtOv" in f ? f.skirtOv : undefined,
+};
+function applyState(st,msg){
+  if(!st||st.fmt!==FMT) throw new Error("not a PALLET\u00b7LAB design file");
+  const byId={}; ctrls().forEach(el=>byId[el.id]=el);
+  // a field the file doesn't have (added after it was saved) starts from its default,
+  // not from whatever design was on screen before
+  for(const id in byId){
+    if(id in st.f) continue;
+    const el=byId[id], mv=MIGRATE[id] ? MIGRATE[id](st.f) : undefined;
+    if(mv!==undefined){ el.value=mv; continue; }
+    if(el.tagName==="SELECT"){ const o=[...el.options].find(o=>o.defaultSelected)||el.options[0]; if(o) el.value=o.value; }
+    else el.value=el.defaultValue;
+  }
+  let missing=0;
+  for(const id in st.f){ if(byId[id]) byId[id].value=st.f[id]; else if(!RETIRED.has(id)) missing++; }
+  palletType = st.type||"stringer";
+  const map={stringer:"tStr",block:"tBlk",box:"tBox"};
+  ["tStr","tBlk","tBox"].forEach(id=>$(id).classList.toggle("on",id===map[palletType]));
+  syncRows();
+  update(msg + (missing?` (${missing} unknown field${missing>1?"s":""} skipped)`:""));
+}
+
+/* ---- design file ---- */
+const slug = s => (s||"").trim().replace(/[^\w.-]+/g,"-").replace(/^-+|-+$/g,"");
+$("btnFileSave").addEventListener("click",()=>{
+  const st=collectState();
+  const name=[slug($("partNo").value), slug($("client").value), palletType]
+             .filter(Boolean).join("_") || "pallet-design";
+  const blob=new Blob([JSON.stringify(st,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name+".pltlab.json";
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+  toast("Saved "+a.download);
+});
+$("btnFileLoad").addEventListener("click",()=>$("fileIn").click());
+$("fileIn").addEventListener("change",e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{ applyState(JSON.parse(r.result), "Loaded "+file.name); }
+    catch(err){ toast("Could not load: "+err.message); }
+    $("fileIn").value="";
+  };
+  r.onerror=()=>{ toast("Could not read that file"); $("fileIn").value=""; };
+  r.readAsText(file);
+});
+
+/* ---- browser library (optional — degrades if storage is blocked) ---- */
+const LIB="palletlab.designs";
+let libOK=true;
+function libRead(){
+  try{ return JSON.parse(localStorage.getItem(LIB)||"[]"); }
+  catch(e){ libOK=false; return []; }
+}
+function libWrite(list){
+  try{ localStorage.setItem(LIB,JSON.stringify(list)); return true; }
+  catch(e){ libOK=false; return false; }
+}
+function libRefresh(sel){
+  const list=libRead(), s=$("libSel");
+  s.innerHTML='<option value="">\u2014 saved in this browser \u2014</option>'+
+    list.map((d,i)=>`<option value="${i}">${esc(d.name)} \u00b7 ${esc((d.state.saved||"").slice(0,10))}</option>`).join("");
+  if(sel!=null) s.value=sel;
+  if(!libOK){
+    $("libSel").disabled=true; $("btnLibSave").disabled=true; $("btnLibDel").disabled=true;
+    $("libHint").textContent="This browser is blocking local storage, so the in-browser list is off. Design files (.json) still work normally.";
+  }
+}
+$("btnLibSave").addEventListener("click",()=>{
+  const dflt=($("partNo").value.trim()||$("client").value.trim()||palletType+" "+$("L").value+"x"+$("W").value);
+  const name=(window.prompt("Save design as:",dflt)||"").trim();
+  if(!name) return;
+  const list=libRead();
+  const st=collectState();
+  const at=list.findIndex(d=>d.name===name);
+  if(at>=0) list[at]={name,state:st}; else list.push({name,state:st});
+  if(libWrite(list)){ libRefresh(at>=0?at:list.length-1); toast((at>=0?"Updated ":"Saved ")+name); }
+  else { libRefresh(); toast("Could not save to this browser"); }
+});
+$("libSel").addEventListener("change",()=>{
+  const i=$("libSel").value; if(i==="") return;
+  const d=libRead()[+i]; if(!d) return;
+  try{ applyState(d.state,"Loaded "+d.name); }catch(err){ toast("Could not load: "+err.message); }
+});
+$("btnLibDel").addEventListener("click",()=>{
+  const i=$("libSel").value;
+  if(i===""){ toast("Pick a saved design first"); return; }
+  const list=libRead(), d=list[+i]; if(!d) return;
+  if(!window.confirm('Delete "'+d.name+'" from this browser?')) return;
+  list.splice(+i,1); libWrite(list); libRefresh(); toast("Deleted "+d.name);
+});
+libRefresh();
+
+window.addEventListener("resize",()=>drawScreen(buildModel()));
+// redraw whenever the drawing area changes size (window resize, or the footer gaining a warning line)
+if(window.ResizeObserver){
+  let lastWH="";
+  new ResizeObserver(()=>{ const k=cv.clientWidth+"x"+cv.clientHeight; if(k!==lastWH){ lastWH=k; drawScreen(buildModel()); } })
+    .observe($("cvWrap"));
+}
+window.addEventListener("keydown",e=>{
+  if(e.key==="p"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); printSpec(); }
+});
+
+update();
+</script>
+</body>
+</html>

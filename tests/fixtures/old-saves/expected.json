@@ -1,0 +1,164 @@
+{
+ "1-first-version_block": {
+  "type": "block",
+  "converted": {
+   "bLay": "even",
+   "bLead": "",
+   "cleatMat": "lumber",
+   "dLead": "",
+   "endOv": "4",
+   "kerf": "0.125",
+   "nDep": "1.5",
+   "nGap": "13",
+   "nLen": "9",
+   "orderQty": "1",
+   "sheetL": "96",
+   "sheetW": "48",
+   "sideOv": "4"
+  }
+ },
+ "1-first-version_box": {
+  "type": "box",
+  "converted": {
+   "bLay": "even",
+   "bLead": "",
+   "cleatMat": "lumber",
+   "dLead": "",
+   "endOv": "2.5",
+   "kerf": "0.125",
+   "nDep": "1.5",
+   "nGap": "13",
+   "nLen": "9",
+   "orderQty": "1",
+   "sheetL": "96",
+   "sheetW": "48",
+   "sideOv": "2.5"
+  }
+ },
+ "1-first-version_stringer": {
+  "type": "stringer",
+  "converted": {
+   "bLay": "even",
+   "bLead": "",
+   "cleatMat": "lumber",
+   "dLead": "",
+   "endOv": "4",
+   "kerf": "0.125",
+   "nDep": "1.5",
+   "nGap": "9.5",
+   "nLen": "9",
+   "orderQty": "1",
+   "sheetL": "96",
+   "sheetW": "48",
+   "sideOv": "4"
+  }
+ },
+ "2-sep-23_block": {
+  "type": "block",
+  "converted": {
+   "bLay": "even",
+   "bLead": "",
+   "cleatMat": "lumber",
+   "dLead": "",
+   "endOv": "4",
+   "kerf": "0.125",
+   "nGap": "18",
+   "orderQty": "1",
+   "sheetL": "96",
+   "sheetW": "48",
+   "sideOv": "4"
+  }
+ },
+ "2-sep-23_box": {
+  "type": "box",
+  "converted": {
+   "bLay": "even",
+   "bLead": "",
+   "cleatMat": "lumber",
+   "dLead": "",
+   "endOv": "2.5",
+   "kerf": "0.125",
+   "nGap": "13",
+   "orderQty": "1",
+   "sheetL": "96",
+   "sheetW": "48",
+   "sideOv": "2.5"
+  }
+ },
+ "2-sep-23_stringer": {
+  "type": "stringer",
+  "converted": {
+   "bLay": "even",
+   "bLead": "",
+   "cleatMat": "lumber",
+   "dLead": "",
+   "endOv": "4",
+   "kerf": "0.125",
+   "nGap": "10",
+   "orderQty": "1",
+   "sheetL": "96",
+   "sheetW": "48",
+   "sideOv": "4"
+  }
+ },
+ "3-oct-14_block": {
+  "type": "block",
+  "converted": {
+   "nGap": "18"
+  }
+ },
+ "3-oct-14_box": {
+  "type": "box",
+  "converted": {
+   "nGap": "13"
+  }
+ },
+ "3-oct-14_stringer": {
+  "type": "stringer",
+  "converted": {
+   "nGap": "10"
+  }
+ },
+ "4-oct-16-notch-from-ends_block": {
+  "type": "block",
+  "converted": {
+   "nGap": "18"
+  }
+ },
+ "4-oct-16-notch-from-ends_box": {
+  "type": "box",
+  "converted": {
+   "nGap": "13"
+  }
+ },
+ "4-oct-16-notch-from-ends_stringer": {
+  "type": "stringer",
+  "converted": {
+   "nGap": "10"
+  }
+ },
+ "5-oct-16-space-between-notches_block": {
+  "type": "block",
+  "converted": {}
+ },
+ "5-oct-16-space-between-notches_box": {
+  "type": "box",
+  "converted": {}
+ },
+ "5-oct-16-space-between-notches_stringer": {
+  "type": "stringer",
+  "converted": {}
+ },
+ "6-oct-16-version-stamp_block": {
+  "type": "block",
+  "converted": {}
+ },
+ "6-oct-16-version-stamp_box": {
+  "type": "box",
+  "converted": {}
+ },
+ "6-oct-16-version-stamp_stringer": {
+  "type": "stringer",
+  "converted": {}
+ }
+}
