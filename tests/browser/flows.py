@@ -1,12 +1,14 @@
 # Browser checks (Chrome via Playwright): the design list and its database (save, update, load, delete, the
 # older in-browser list moved in, damaged or blocked or full storage, two tabs, design files saved and loaded
 # into the list, importing many files, search), design files (good, damaged, foreign), type switching, printing.
-# Usage: python3 flows.py [path/to/pallet-lab.html]     (needs: pip install playwright && playwright install chromium)
+# Usage: python3 flows.py [path/to/pallet-lab.html or https://the-site/]   (needs: pip install playwright && playwright install chromium)
 import pathlib
 import asyncio, json, os, random, sys, unicodedata
 from playwright.async_api import async_playwright
 HERE=os.path.dirname(os.path.abspath(__file__))
-URL=pathlib.Path(os.path.abspath(sys.argv[1] if len(sys.argv)>1 else os.path.join(HERE,"..","..","pallet-lab.html"))).as_uri()
+# a file, or the published site (http:// or https://, for example after a deploy)
+ARG=sys.argv[1] if len(sys.argv)>1 else os.path.join(HERE,"..","..","pallet-lab.html")
+URL=ARG if ARG.startswith(("http://","https://")) else pathlib.Path(os.path.abspath(ARG)).as_uri()
 OLD=os.path.join(HERE,"..","fixtures","old-saves")
 import tempfile
 D=tempfile.mkdtemp(prefix="pallet-lab-flows-")
