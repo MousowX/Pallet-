@@ -1,8 +1,16 @@
 # PALLET·LAB — changelog
 
-Newest first. The numbers match the files in `../history`. The working file `../pallet-lab.html` is version 11.
+Newest first. The numbers match the files in `../history`. The working file `../pallet-lab.html` is version 12.
 
-## 11 · 2026-10-20 — restructure and design database (working file)
+## 12 · 2026-10-21 — shared design list, pilot (working file)
+Version 11 with a design list shared between computers, kept in Supabase. Every result is the same as version 11: capacities, bill of materials, details, warnings, cut list, both printouts and saved files (600 designs compared, no differences).
+- DESIGNS: sign in with email and password to use the shared list. SAVE HERE, SAVE FILE, LOAD FILE, IMPORT FILES and the search work on it as on the browser list; COPY BROWSER LIST uploads the designs saved in this browser.
+- Only the members listed in Supabase can read or change the shared designs; new sign-ups are off. A design someone else saved is replaced only after asking, and a delete says it is for everyone. Each design records who saved it last.
+- Signed out, offline, or with a session that can't be renewed, the list is this browser's, as before.
+- The website and the double-clicked file use the same shared list. The tool talks to Supabase with plain web requests: still one file, no library to download.
+- `supabase/schema.sql` sets up the project (table, members, security rules).
+
+## 11 · 2026-10-20 — restructure and design database
 Version 10 with its code reorganized and a database for saved designs. Every result is the same as version 10: capacities, bill of materials, details, warnings, cut list, both printouts, saved files and the drawings (600 designs and 120 drawings compared, no differences).
 - The code lives in `src/`, one file per part (calculations, drawing, printouts, designs). `node build.js` joins it into the one self-contained `pallet-lab.html`, which still opens with a double-click, offline.
 - DESIGNS list: every design is kept in one database in the browser (IndexedDB): SAVE HERE, every SAVE FILE and LOAD FILE (under the file's name), and the new IMPORT FILES TO THE LIST for many files at once. A design saved under a name already in the list replaces it and keeps its place.
