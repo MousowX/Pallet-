@@ -12,6 +12,7 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 | `src/css/` | `screen.css` (the page), `print.css` (spec sheet and cut list on paper) |
 | `src/js/` | the code, one file per part (table below); `build.js` lists them in the order they run |
 | `build.js` | joins `src/` into `pallet-lab.html`; `node build.js --check` fails if the file is out of date |
+| `vercel.json`, `render.yaml` | the website: both publish only the tool, made by `node build.js --site` as `dist/index.html` (ignored by git) |
 | `history/` | every earlier version, numbered; the newest approved one is the baseline for comparisons (see `history/README.md`) |
 | `tests/` | automatic checks (below), old saved designs in `tests/fixtures/old-saves` |
 | `docs/` | `CHANGELOG.md`, the decision note, and Isaac's checklist (`.xlsx`) |
@@ -27,6 +28,7 @@ This file is the only pallet tool and the only source of load-capacity numbers. 
 - **Language:** the interface is in English. Keep the Spanish shop terms already used (tablas, triplay, seco).
 - **Capacity math:** never change it silently. Say what changed and show before and after numbers for the GMA 48×40 (the RESET button) and the export crate preset.
 - **Printing:** a pallet spec sheet must fit on one Letter page.
+- **Website:** the site publishes the committed `pallet-lab.html` only (`node build.js --site` refuses an out-of-date file). It updates on every merge to `main`. Its design list is the site's own: browser storage belongs to each address, so designs saved in the double-clicked file are not on the site. `python tests/browser/flows.py <site URL>` checks a published site.
 
 ## Saved designs: keep old files working
 - A design file is JSON: `{fmt:"pallet-lab/1", type, saved, f:{<input id>: value}}`. Every `input` and `select` with an id in `#main` is saved automatically (`collectState`), except the DESIGNS section (`#secLib`: the list, the search box and the file pickers).

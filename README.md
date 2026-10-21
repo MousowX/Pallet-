@@ -29,6 +29,16 @@ La sección DESIGNS guarda todos tus diseños en una base de datos dentro del na
 - La base vive en este navegador y esta computadora. Si borras los datos del navegador, se borra también, así que los archivos `.json` siguen siendo tu respaldo.
 - Si el navegador no permite la base de datos, la herramienta usa la lista vieja como antes. Si bloquea todo el almacenamiento, la lista se apaga y los archivos siguen funcionando.
 
+## Publicar en internet (Render o Vercel)
+La herramienta también puede vivir en una página web. Se publica solo `pallet-lab.html` (como página principal); `history/`, `tests/` y `docs/` no se publican. Cada vez que algo entra a `main`, la página se actualiza sola.
+
+- **Render** (`render.yaml`), sitio estático gratis: en render.com entra con tu cuenta de GitHub → **New** → **Blueprint** → elige el repositorio `MousowX/Pallet-` → **Apply**.
+- **Vercel** (`vercel.json`): en vercel.com → **Add New** → **Project** → importa `MousowX/Pallet-` → **Deploy**. El plan gratis (Hobby) es solo para uso personal, no comercial; para la empresa se necesita el plan Pro.
+- Los dos ya traen la configuración: no hay que escribir ningún comando.
+- Los diseños guardados en la página web son aparte de los del archivo con doble clic: cada uno tiene su propia lista. Para pasarlos, usa **IMPORT FILES TO THE LIST** con tus archivos `.json`.
+- La página necesita internet para abrir. El archivo con doble clic sigue funcionando sin internet.
+- Para revisar la página publicada: `python tests/browser/flows.py https://tu-direccion/`.
+
 ## Para reestructurar
 Pide un plan antes de mover nada, por ejemplo:
 

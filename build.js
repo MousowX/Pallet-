@@ -5,6 +5,8 @@
 //
 // Usage: node build.js           write pallet-lab.html
 //        node build.js --check   only check that pallet-lab.html is what src/ builds (npm test runs it)
+//        node build.js --site    the website (Vercel, Render): the checked pallet-lab.html alone, as
+//                                dist/index.html — nothing else from the project is published
 "use strict";
 const fs=require("fs"), path=require("path");
 const SRC=path.join(__dirname,"src"), OUT=path.join(__dirname,"pallet-lab.html");
@@ -55,7 +57,7 @@ function build(){
 }
 
 const html=build();
-if(process.argv.includes("--check")){
+if(process.argv.includes("--check") || process.argv.includes("--site")){
   const now=fs.existsSync(OUT) ? fs.readFileSync(OUT,"utf8").replace(/\r\n?/g,"\n") : "";
   if(now!==html){
     console.log("pallet-lab.html is not up to date with src/ — run: node build.js");
@@ -63,7 +65,13 @@ if(process.argv.includes("--check")){
     process.exit(1);
   }
   console.log("pallet-lab.html matches src/");
-  console.log("failed checks: 0");
+  if(process.argv.includes("--site")){
+    // the site publishes the committed, tested file as it is
+    const dir=path.join(__dirname,"dist");
+    fs.mkdirSync(dir,{recursive:true});
+    fs.writeFileSync(path.join(dir,"index.html"),now);
+    console.log("site: dist/index.html");
+  }else console.log("failed checks: 0");
 }else{
   fs.writeFileSync(OUT,html);
   console.log(`built pallet-lab.html · ${(Buffer.byteLength(html)/1024).toFixed(1)} KB · ${CSS.length} CSS + ${JS.length} JS files from src/`);

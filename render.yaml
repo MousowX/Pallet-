@@ -1,0 +1,21 @@
+# Render Blueprint: PALLET·LAB as a static site. It publishes only the tool (dist/index.html, made by
+# node build.js --site from the committed pallet-lab.html), never the rest of the project.
+# "no-cache" makes every browser check for a new version on each visit, so an update shows at once.
+services:
+  - type: web
+    name: pallet-lab
+    runtime: static
+    branch: main
+    buildCommand: node build.js --site
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
