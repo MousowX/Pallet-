@@ -10,7 +10,7 @@ Todo lo de PALLET·LAB en una carpeta, listo para abrir en Claude Code.
 | `build.js` | Junta `src/` en el único `pallet-lab.html`. |
 | `CLAUDE.md` | Las reglas que Claude Code lee solo: un solo archivo HTML, sin precios, solo White Fir y Pino Mexicano, los diseños guardados siempre deben abrir, y cada cambio en una rama que tú apruebas. |
 | `docs/` | Historial de cambios (`CHANGELOG.md`), la nota de la decisión de usar solo PALLET·LAB y tu checklist en Excel. |
-| `history/` | Todas las versiones anteriores, numeradas del 01 al 12. La 12 es la versión aprobada contra la que se comparan los cambios. |
+| `history/` | Todas las versiones anteriores, numeradas del 01 al 13. La 13 es la versión aprobada contra la que se comparan los cambios. |
 | `tests/` | Pruebas automáticas, incluidos 18 diseños guardados con versiones anteriores. |
 
 ## Para empezar en Claude Code
@@ -95,7 +95,7 @@ En Windows, el comando de Python suele ser `python` o `py` en lugar de `python3`
 
 ## Respaldo
 - Copia congelada en tu proyecto Cobaza Madera de Claude: `pallet-lab/pallet-lab-backup-2026-10-17.html`.
-- `history/12_2026-10-21_master.html` en esta carpeta (la versión aprobada actual) y todas las anteriores.
+- `history/13_2026-10-21_master.html` en esta carpeta (la versión aprobada actual) y todas las anteriores.
 
 ## Pendientes conocidos
 - La capacidad con montacargas (FORK SUPPORT) no toma en cuenta las muescas, así que sale alta cuando las horquillas entran por ellas. Es la primera mejora de la checklist.

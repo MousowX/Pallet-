@@ -1,8 +1,15 @@
 # PALLET·LAB — changelog
 
-Newest first. The numbers match the files in `../history`. The working file `../pallet-lab.html` is version 12.
+Newest first. The numbers match the files in `../history`. The working file `../pallet-lab.html` is version 13.
 
-## 12 · 2026-10-21 — shared design list, pilot (working file)
+## 13 · 2026-10-21 — folding panels (working file)
+Version 12 with panels that open and close. Every result is the same as version 12: capacities, bill of materials, details, warnings, cut list, both printouts, saved files and the drawings (600 designs and 120 drawings compared, no differences).
+- Every section opens and closes from its title (click, Enter or Space), on both sides of the screen.
+- A closed input section shows a one-line summary of the values the calculation uses, for example "48″ × 40″" or "SF 1.5 · δ 1%".
+- The help notes start hidden, behind a "?" on each title; the notice that the browser blocks storage still shows.
+- The browser remembers which sections are closed and which notes are open. Screen only: nothing is saved in a design or printed.
+
+## 12 · 2026-10-21 — shared design list, pilot
 Version 11 with a design list shared between computers, kept in Supabase. Every result is the same as version 11: capacities, bill of materials, details, warnings, cut list, both printouts and saved files (600 designs compared, no differences).
 - DESIGNS: sign in with email and password to use the shared list. SAVE HERE, SAVE FILE, LOAD FILE, IMPORT FILES and the search work on it as on the browser list; COPY BROWSER LIST uploads the designs saved in this browser.
 - Only the members listed in Supabase can read or change the shared designs; new sign-ups are off. A design someone else saved is replaced only after asking, and a delete says it is for everyone. Each design records who saved it last.
